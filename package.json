@@ -1,0 +1,47 @@
+{
+  "name": "vantaztic",
+  "version": "1.0.1",
+  "description": "Vantaztic API onrender.com",
+  "main": "asn.js",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.2",
+    "bootstrap-icons": "^1.10.5",
+    "busboy": "^1.6.0",
+    "chrome-launcher": "^0.15.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "emailjs": "^4.0.2",
+    "express": "^4.18.1",
+    "handlebars": "^4.7.8",
+    "html-pdf": "^3.0.1",
+    "ip": "^1.1.8",
+    "jsftp": "^2.1.3",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.6.8",
+    "nodemailer": "^6.9.14",
+    "nodemon": "^2.0.22",
+    "pg": "^8.13.1",
+    "puppeteer": "^22.6.0",
+    "puppeteer-html-pdf": "^3.0.3",
+    "qrcode": "^1.5.3",
+    "request-ip": "^3.3.0",
+    "scp2": "^0.5.0",
+    "sharp": "^0.32.1",
+    "socket.io": "^4.6.1",
+    "stream": "^0.0.2",
+    "xlsx": "^0.18.5"
+  },
+  "scripts": {
+    "build": "nodemon --exec node --env-file=.env van.js",
+    "dev": "nodemon --exec node --env-file=.env van.js",
+    "test": "node van.js"
+  },
+  "keywords": [
+    "Vantaztic"
+  ],
+  "author": "Carlo O. Dominguez",
+  "license": "ISC"
+}

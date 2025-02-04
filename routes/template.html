@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+<style>
+    body{
+        color:rgb(88, 85, 85);
+        font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    }
+    h3{
+        color:rgb(88, 85, 85);
+        text-align: center;
+    }
+    .pagex{
+        
+        font-size: 8px;
+    }
+    .addy{
+        font-size: 10px;
+    }
+    .heads{
+        font-weight: bold;
+    }
+
+    table.datatable tr td { 
+        font-size: 10px; 
+    }
+    table.dataclient tr td { 
+        font-size: 11px; 
+    }
+    .datatable thead{
+        vertical-align: bottom;
+    }
+    .datatable thead th{
+        border-bottom: 2px solid #000;
+    }
+    hr{
+        position: relative;
+        top:20px;
+        align-self: self-start;
+        border:none;
+        background:#000;
+        height:1px;
+        margin-bottom: 10px;
+    }
+    .remarks{
+        font-size: 13px;
+    }
+    .received{
+        font-size:12px;
+        font-weight: 600;
+    }
+
+</style>
+</head>
+<body>
+
+<div style="text-align:center">
+    <img src="data:image/png;base64,{{logos}}" height="39px" /><br>
+    <span class="addy">
+    5117 Mindanao Ave. Ext, Bgy. Ugong, Valenzuela City<br>
+    Tel Nos. (02) 703-4252; (02) 7 500-9039<br>
+    Email : sales@vantaztic.com<br>
+    https://vantaztic.com
+    </span>
+    <hr>
+</div>
+
+    <h3>DELIVERY RECEIPT  No. {{dr_number}}</h3>
+    <table width="80%" class="dataclient">
+        <tr>
+            <td width="25%">DATE </td>
+            <td width="5%">:</td>
+            <td width="50%" align="left">{{date_approve}}</td>
+        </tr>
+        <tr>
+            <td width="">TRANSACTION </td>
+            <td >:</td>
+            <td align="left">{{transaction}}</td>
+        </tr>
+        <tr>
+            <td width="">CLIENT </td>
+            <td >:</td>
+            <td align="left">{{client}}</td>
+        </tr>
+        <tr>
+            <td width="">COMPANY NAME</td>
+            <td >:</td>
+            <td align="left">{{company}}</td>
+        </tr>
+        <tr>
+            <td >DELIVERY SITE </td>
+            <td>:</td>
+            <td  align="left">{{address}}</td>
+        </tr>
+        <tr>
+            <td >TRUCKING </td>
+            <td>:</td>
+            <td  align="left">{{trucking}}</td>
+        </tr>
+        <tr>
+            <td >DRIVER </td>
+            <td>:</td>
+            <td  align="left">{{driver}}</td>
+        </tr>
+        <tr>
+            <td >PLATE NO. </td>
+            <td>:</td>
+            <td  align="left">{{plateno}}</td>
+        </tr>
+        
+        <tr>
+            <td >CONTACT No. </td>
+            <td>:</td>
+            <td align="left">{{phone}}</td>
+        </tr>
+        <tr>
+            <td >EMAIL</td>
+            <td>:</td>
+            <td  align="left">{{email}}</td>
+        </tr>
+    </table>
+    
+    <P class="heads">PARTICULARS :</P>
+    
+    <table class="datatable" cellpadding="0" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th align="left" width="15%">Type</th>
+                <th align="left" width="45%">Description</th>
+                <th align="left" width="25%">Eqpt No.</th>
+                <th align="center" width="15%">Qty</th>
+            </tr>
+        </thead>
+        <tbody>
+        <tr><td colspan=4>&nbsp;</td></tr>
+        {{#each data}}
+            <tr>
+                <td align="left" >{{type}}</td>
+                <td align="left" >{{description}}</td>
+                <td align="left" >{{eqpt_no}}</td>
+                <td align="center">{{qty}}</td>
+            </tr>
+            
+        {{/each}}
+        </tbody>
+    </table>
+
+    <p class="heads">REMARKS :</p>
+    <span class="remarks">{{remarks}}</span>
+    <br><br><br>
+    <table border="0" cellpadding=0 cellspacing=0 width="100%">
+        <tr>
+            <td width="30%" align="left">
+                <span class="received">
+                Received by:<br><br>
+                <hr><br>
+                {{client}}
+                </span>
+            </td>
+            <td align="right" valign="top">
+                <img src="data:image/png;base64,{{qr}}" height="100px" /><br>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
