@@ -35,9 +35,9 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "build": "nodemon --exec node --env-file=.env van.js",
-    "dev": "nodemon --exec node --env-file=.env van.js",
-    "test": "node van.js"
+    "build": "nodemon --exec node --env-file=.env asn.js",
+    "dev": "nodemon --exec node --env-file=.env asn.js",
+    "test": "node asn.js"
   },
   "keywords": [
     "Vantaztic"
