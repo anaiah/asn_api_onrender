@@ -55,10 +55,10 @@ const server_https = http.createServer( app);
 //const io = new Server(server_https);
 const io = require("socket.io")( server_https, {
     cors: {
-      //origin: "https://app.vantaztic.com",
-      methods: ["GET", "POST"],
-      allowedHeaders: ["vantaztic-header"],
-      credentials: true
+    origin: "https://asnencinc-web.onrender.com",
+      methods: ["GET", "POST","PUT","DELETE"],
+      //allowedHeaders: ["vantaztic-header"],
+      //credentials: true
     }
   })
 
