@@ -72,7 +72,7 @@ const upload = multer({ storage });
 const xlsx = require('xlsx');
 
 // Upload endpoint
-router.post('/claims',  async (req, res) => {
+router.post('/claims', upload.single('claims_upload_file'), async (req, res) => {
     try {
         // Read the file buffer
         const workbook = xlsx.read(req.file.buffer);
@@ -87,13 +87,14 @@ router.post('/claims',  async (req, res) => {
 
 		console.log(data)
 
+
         // Insert records into PostgreSQL
         const insertPromises=data.map(async (record) => {
 			//console.log(record)
             const { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
-
-			console.log('ey',batch_id)
-            /*
+            
+			console.log(full_name, track_number)
+			/*
 			connectPg()
 			.then((db)=>{
             	$sql =   `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amount) 
@@ -111,7 +112,8 @@ router.post('/claims',  async (req, res) => {
 
 			}).catch((error)=>{
 				res.status(500).json({error:'Error'})
-			}) */
+			}) 
+				*/
                            
         });
 
