@@ -83,44 +83,68 @@ router.post('/claims', upload.single('claims_upload_file'), async (req, res) => 
         
         // Convert the sheet to JSON
         const data = xlsx.utils.sheet_to_json(worksheet);
-
-
-		console.log(data)
-
-
-        // Insert records into PostgreSQL
-        const insertPromises=data.map(async (record) => {
-			//console.log(record)
-            const { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
-            
-			console.log(full_name, track_number)
-			/*
-			connectPg()
-			.then((db)=>{
-            	$sql =   `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amount) 
-				VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`
-
-				db.query( $sql,
-					[batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt],
-					(error,result)=>{
-						//console.log('inserting..',result.rowCount)
 		
-						//results.rows[0]
-					closePg(db)
+		const insertPromises =[]
+
+
+		connectPg()
+		.then((db)=>{
+			for( const record of data){
+				const { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
+			
+				console.log( record.full_name)
+
+				const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amount) 
+						VALUES ($1, $2, $3, $4, $5, $6, $7)`
+
+				insertPromises.push(db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt]))
+			}
+		}).catch((error)=>{
+			res.status(500).json({error:'Error'})
+		})
+		await Promise.all(insertPromises)
+		return res.status(200).json({message:'Claims Upload Successfully!',status:true})
+        
+
+		//console.log(data)
+				/*
+		
+        	// Insert records into PostgreSQL
+			const insertPromises=data.map(async (record) => {
+				//console.log(record)
+				let { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
+		
+				 
+				connectPg()
+				.then((db)=>{
+		
+					let sql =   `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amount) 
+					VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`
+
+					//console.log(sql)
+
+
+					db.query( sql,
+						[batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt],
+						(error,result)=>{
+							//console.log('inserting..',result)
+						
+							//results.rows[0]
+
+						closePg(db)
+				
+					})
+					
+				}).catch((error)=>{
+					res.status(500).json({error:'Error'})
 				})
-
-
-			}).catch((error)=>{
-				res.status(500).json({error:'Error'})
-			}) 
-				*/
-                           
-        });
-
-        await Promise.all(insertPromises);
-		res.status(200).json({message:'Claims Upload Successfully!',status:true})
-       
-    } catch (error) {
+							   
+			});//done insert promises
+			
+			await Promise.all(insertPromises)
+			return res.status(200).json({message:'Claims Upload Successfully!',status:true})
+        */
+    } catch (error) {  //end try
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
