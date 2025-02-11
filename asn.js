@@ -16,33 +16,6 @@ connectPg()
     console.log("***ERROR, CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
 });  
 
-/*  
-const { Pool } = require('pg') // postgresql
-
-const pool = new Pool({
-   
-    host: "ep-still-star-a5s7o7wh-pooler.us-east-2.aws.neon.tech",
-    user:"neondb_owner",
-    password:"npg_s7LehAjy9Ipv",
-    database:"asianow",
-    port:5432,
-    min: 4,
-    max: 10,
-    idleTimeoutMillis: 1000,
-    multipleStatements:true,
-    ssl:{
-        rejectUnauthorized:false,
-    }
-});
-
-pool.connect( (err,client,release)=>{
-    if(err){
-        console.log('Pool Connection Error')
-    }else{
-        console.log('Pool Connected!')
-    }
-})
-*/
 
 const http = require('http')
 
@@ -93,7 +66,7 @@ app.use(function(req, res, next) {
 var allowCrossDomain = function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Origin, X-Requested-With, Content-Type, Accept, Authorization');
     next();
 }
 
@@ -229,5 +202,5 @@ io.on('connection', (socket) => {
 const port = process.env.PORT||10000
 
 server_https.listen( port ,()=>{
-    console.log(`vantaztic api listening to port ${port}`)
+    console.log(`ASIANOW ENTERPRISE INC. API -- listening to port ${port}`)
 })

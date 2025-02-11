@@ -1,5 +1,8 @@
 package-lock.json
 node_modules/*
+*workspace*
+*.xls*
+*.csv
 *.pem
 *.cer
 *.key

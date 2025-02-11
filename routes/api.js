@@ -10,7 +10,6 @@ const Utils = require('./util')//== my func
 //const QRPDF = require('./qrpdf')
 const asnpdf = require('./asnpdf')//=== my own module
 
-
 const cookieParser = require('cookie-parser')
 
 const cors = require('cors')
@@ -44,7 +43,6 @@ const pdf = require('html-pdf');//used for pdf.create
 // const PassThrough = require('stream')
 const hbar = require('handlebars');
 const QRCode = require('qrcode')
-const boxview = require('chrome-launcher')
 const multer = require('multer')
 const sharp = require('sharp')
 
@@ -72,7 +70,10 @@ const upload = multer({ storage });
 const xlsx = require('xlsx');
 
 // Upload endpoint
-router.post('/claims', upload.single('claims_upload_file'), async (req, res) => {
+
+router.post('/xxxclaims', upload.single('claims_upload_file'), async (req, res) => {
+
+	/*
     try {
         // Read the file buffer
         const workbook = xlsx.read(req.file.buffer);
@@ -85,69 +86,37 @@ router.post('/claims', upload.single('claims_upload_file'), async (req, res) => 
         const data = xlsx.utils.sheet_to_json(worksheet);
 		
 		const insertPromises =[]
-
-
+ 
 		connectPg()
 		.then((db)=>{
 			for( const record of data){
 				const { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
 			
-				console.log( record.full_name)
+				//console.log( record.full_name)
 
 				const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amount) 
 						VALUES ($1, $2, $3, $4, $5, $6, $7)`
 
 				insertPromises.push(db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt]))
 			}
+				
+			Promise.all(insertPromises)
+			console.log('done upooad ')
+			return res.status(200).json({message:'Claims Upload Successfully!',status:true})
+        
+			
 		}).catch((error)=>{
+			closePg(db)
+
 			res.status(500).json({error:'Error'})
 		})
-		await Promise.all(insertPromises)
-		return res.status(200).json({message:'Claims Upload Successfully!',status:true})
-        
-
-		//console.log(data)
-				/*
 		
-        	// Insert records into PostgreSQL
-			const insertPromises=data.map(async (record) => {
-				//console.log(record)
-				let { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
 		
-				 
-				connectPg()
-				.then((db)=>{
-		
-					let sql =   `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amount) 
-					VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`
-
-					//console.log(sql)
-
-
-					db.query( sql,
-						[batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt],
-						(error,result)=>{
-							//console.log('inserting..',result)
-						
-							//results.rows[0]
-
-						closePg(db)
-				
-					})
-					
-				}).catch((error)=>{
-					res.status(500).json({error:'Error'})
-				})
-							   
-			});//done insert promises
-			
-			await Promise.all(insertPromises)
-			return res.status(200).json({message:'Claims Upload Successfully!',status:true})
-        */
     } catch (error) {  //end try
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+		*/
 });
 
 
@@ -314,10 +283,10 @@ router.post('/postimage',   async (req, res) => {
 			extname = ".jpg"
 		}else{
 			extname = path.extname(filename.filename)
-		}
+		} 
 		
 		// fieldname is 'fileUpload'
-		var fstream = fs.createWriteStream('ASN-'+myfile + extname);
+		var fstream = fs.createWriteStream('ASN-'+ filename + extname);
 		
 		file.pipe(fstream);
 			
@@ -362,6 +331,8 @@ router.post('/postimage',   async (req, res) => {
 	req.pipe(busboy)
 	
 }) //==============end post image =============//
+
+
 
 //==============busboy, scp2  for file uploading============
 
@@ -413,6 +384,129 @@ router.post('/uploadpdf',  async(req, res)=>{
 	req.pipe(busboy)
 		
 })//==end upload
+
+const csvParser = require('csv-parser');
+
+//=== FINAL FOR CLAIMS
+router.post('/claims', async( req, res) => {
+	console.log('===FIRING /postimage===')
+
+	const busboy = Busboy({ headers: req.headers });
+		
+	busboy.on('file', function(fieldname, file, filename) {
+
+		console.log( 'firing busboy on Excel file() ==', filename, fieldname, path.extname( filename.filename) )
+		
+		let extname
+
+		if( path.extname(filename.filename) ===".csv"  ){
+			extname = ".csv"
+		}else{
+			extname = path.extname(filename.filename)
+		}
+
+		const final_file =`ASN-${getRandomPin('0123456789',4)}.csv`
+		
+		// fieldname is 'fileUpload'
+		var fstream = fs.createWriteStream( final_file );
+		
+		file.pipe(fstream);
+			
+		console.log( 'Writing Excel file Stream... ', fstream.path )
+
+		file.resume()
+
+		fstream.on('close', function () {
+			console.log('Closing Stream, Trying to Up load to POSTGRES...')
+		
+
+			const results = [];
+
+			connectPg()
+			.then((db)=>{
+
+				fs.createReadStream(fstream.path)
+					.pipe(csvParser())
+					.on('data', (data) => results.push(data))
+					.on('end', () => {
+						const queryPromises = results.map(row => {
+							
+							const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
+							const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
+							VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+
+							return db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
+						});
+
+						Promise.all(queryPromises)
+							.then(() => {
+								fs.unlinkSync(fstream.path); // Remove the file after processing
+								closePg(db)
+								console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
+								return res.status(200).json({message:'Claims Upload Successfully!',status:true})
+					
+							})
+							.catch(err => {
+								console.error(err);
+								res.status(500).send('Error inserting data');
+							});
+				});		
+			}).catch((error)=>{
+				closePg(db)
+	
+				res.status(500).json({error:'Error'})
+			})
+
+		})//====end fstream
+	})//===end busboy on file 
+	
+	busboy.on('finish',()=>{
+		console.log('busboy finish')
+	}) //busboy on finish
+
+	//write file
+	req.pipe(busboy)
+	
+})
+
+//===========BULK INSERT CSV================
+router.get('/copy-data', async (req, res) => {
+	try {
+		// You need to have a CSV file available to copy from
+		const filePath = '/path/to/your/file.csv';
+		
+		// You can read the file and use COPY FROM STDIN method
+		const client = await pool.connect();
+		const query = `COPY your_table FROM STDIN WITH (FORMAT csv)`;
+
+		const stream = client.query(copyFrom(query));
+		const fileStream = fs.createReadStream(filePath);
+
+		fileStream.on('error', (error) => {
+		console.error('File stream error:', error);
+		res.status(500).send('Error reading the file');
+		});
+
+		stream.on('end', () => {
+		client.release();
+		res.status(200).send('Data copied successfully');
+		});
+
+		stream.on('error', (error) => {
+		client.release();
+		console.error('Database stream error:', error);
+		res.status(500).send('Error copying data');
+		});
+
+		fileStream.pipe(stream);
+
+	} catch (error) {
+		console.error('Error in /copy-data:', error);
+		res.status(500).send('Error processing request');
+	}
+});
+
+//============END BULK INSERT CSV ===========
 
 //=================function getting drnumber ======//
 const drseq = () => {
@@ -560,39 +654,41 @@ router.get('/getrider', async(req, res)=>{
 
 //======= end top 10
 router.get('/getrecord/:enum/:ename', async(req, res)=>{
- 
+	let sql
+
 	if ( req.params.ename!=="blank" &&  req.params.enum!== "blank"){
 		sql = `SELECT distinct(full_name) as rider,
 		emp_id,
+		category,
 		hubs_location as hub, 
 		sum( amount ) as total from asn_claims
-		group by emp_id,full_name,hubs_location
+		group by full_name,emp_id,category,hubs_location
 		having emp_id like '%${req.params.enum}%' or
 		upper(full_name)like '%${req.params.ename.toUpperCase()}%'
 		order by full_name desc LIMIT 10`
  	}else if( req.params.enum!== "blank"){
 		sql = `SELECT distinct(full_name) as rider,
 		emp_id,
+		category,
 		hubs_location as hub, 
 		sum( amount ) as total from asn_claims
-		group by emp_id,full_name,hubs_location
+		group by full_name,emp_id,category,hubs_location
 		having emp_id like '%${req.params.enum}%'
 		order by full_name desc LIMIT 10`
 	}else if ( req.params.ename!=="blank"){
 		sql = `SELECT distinct(full_name) as rider,
 		emp_id,
+		category,
 		hubs_location as hub, 
 		sum( amount ) as total from asn_claims
-		group by emp_id,full_name,hubs_location
+		group by full_name,emp_id,category,hubs_location
 		having upper(full_name)like '%${req.params.ename.toUpperCase()}%'
 		order by full_name desc LIMIT 10`
 	
-
 	}//eif
 
-	console.log( 'Search Claims processing...')
-
-
+	console.log( 'Search Claims processing...',sql)
+	
 	connectPg()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
@@ -671,15 +767,18 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 router.get('/createpdf/:e_num', async(req, res)=>{
 
 	console.log('===createpdf()====', req.params.e_num)
-	sql = `SELECT distinct(full_name) as rider,
+	const sql = `SELECT distinct(full_name) as rider,
 	emp_id,
+	category,
 	hubs_location as hub, 
 	track_number as track,
 	claims_reason as reason,
 	sum( amount ) as total from asn_claims
-	group by emp_id,full_name,hubs_location, track_number,claims_reason
+	group by full_name,emp_id,category,hubs_location, track_number,claims_reason
 	having emp_id='${req.params.e_num}'
 	order by full_name`
+
+	//console.log(sql )
 
 	connectPg()
 	.then((db)=>{
@@ -706,16 +805,17 @@ router.get('/createpdf/:e_num', async(req, res)=>{
 					 
 				}//endfor
 
-				let nTotal = addCommas(parseFloat(total_amt).toFixed(2))
+				let nFormatTotal = addCommas(parseFloat(total_amt).toFixed(2))
+				let nTotal = parseFloat(total_amt).toFixed(2)
 
 				//=== CREATE MEDRX ===========
-				asnpdf.reportpdf( xdata, curr_date,  nTotal)
+				asnpdf.reportpdf( xdata, curr_date,  nFormatTotal, nTotal)
 				.then( reportfile =>{
 					console.log('REPORT PDF SUCCESS!', reportfile)
 					
-					//force download
+					//============ force download
 					res.download( reportfile, reportfile,(err)=>{
-						console.log('downloading pdf ')
+						console.log('==downloading pdf===')
 						if(err){
 							console.error('Error in Downloading ',reportfile,err)
 
@@ -740,7 +840,7 @@ router.get('/createpdf/:e_num', async(req, res)=>{
 //====== CLEANUP PDF
 router.get('/deletepdf/:e_num', async(req, res) => {
 
-	let reportfile = `ASN_${req.params.e_num}.pdf`
+	let reportfile = `ADT_${req.params.e_num}.pdf`
 
  	Utils.deletePdf(reportfile)
 	.then(x => {
@@ -1306,8 +1406,9 @@ const strdates = () =>{
 	var dd = String(today.getDate()).padStart(2,'0')
 	var mm = String(today.getMonth()+1).padStart(2,'0')
 	var yyyy = today.getFullYear()
+	var mos = new Date(`${today.getMonth()+1}/${dd}/${yyyy}`).toLocaleString('en-PH',{month:'long'})
 
-	today = mm +'_'+dd+'_'+yyyy
+	today = mos + dd +', '+yyyy
 	return today
 }
 

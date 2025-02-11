@@ -21,7 +21,7 @@
             font-size: 8px;
         }
         .addy{
-            font-size: 13px;
+            font-size: 11px;
         }
         .heads{
             font-weight: bold;
@@ -29,6 +29,10 @@
 
         table{
             border-collapse: collapse;
+        }
+        table.datatable thead th { 
+            font-size: 11px;
+            font-weight: bold; 
         }
         table.datatable tr td { 
             font-size: 10px; 
@@ -42,6 +46,9 @@
         .dataclient thead th{
             border-bottom: 2px solid #000;
         }
+        .datatable thead th{
+            border-bottom: 1px solid #000;
+        }
         hr{
             position: relative;
             top:20px;
@@ -51,12 +58,28 @@
             height:1px;
             margin-bottom: 10px;
         }
+        #pspdfkit-header {
+            display: flow-root;
+        }
         .remarks{
             font-size: 13px;
         }
-        .received{
+        .letters{
             font-size:12px;
-            font-weight: 600;
+        }
+
+        .container {
+            width: 500px;
+        }
+
+        .row {
+            display: flex;
+        }
+
+        .underline {
+            flex-grow: 1;
+            border-bottom: 1px solid black;
+            margin-left: 5px;
         }
 
     </style>
@@ -66,7 +89,9 @@
 <body>
     <!--
     {{#each data}}
-    <tr>
+    <tr>#pspdfkit-header {
+    display: flow-root;
+}
         <td align="left" >{{type}}</td>
         <td align="left" >{{description}}</td>
         <td align="left" >{{eqpt_no}}</td>
@@ -75,34 +100,96 @@
     
     {{/each}}
 -->
-<div style="text-align:center"> 
-    <img src="data:image/png;base64,{{logos}}" height="39px" /><br>
-    <span class="addy">
-    <B>ASIA NOW ENTERPRISE INC.</B><br>
-    20F Arthaland Century Pacific Tower<br>
-    4th Ave.,30th St., Taguig, Metro Manila<br>
+
+<div id="pageHeader-first" class="mb-5">
+    <div style="text-align:center"> 
+        <img src="data:image/png;base64,{{logos}}" height="29px" /><br>
+        <span class="addy">
+        <B>ASIA NOW ENTERPRISES INC.</B><br>
+        20F Arthaland Century Pacific Tower<br>
+        4th Ave. 30th St., Taguig, Metro Manila<br>
+        <hr>
     </span>
-    <hr>
+        
+    </div>
 </div>
-<div>
+
+<div id="pageHeader-2" class="mb-5">
+    <div style="text-align:center"> 
+        <img src="data:image/png;base64,{{logos}}" height="29px" /><br>
+        <span class="addy">
+        <B>ASIA NOW ENTERPRISES INC.</B><br>
+        20F Arthaland Century Pacific Tower<br>
+        4th Ave. 30th St., Taguig, Metro Manila<br>
+        <hr>
+    </span>
+        
+    </div>
+</div>
+
+<div id="pageContent">
+<!-- cover letter -->
+<div class="letters mt-5">
+    <br><br><br>
     <br><br><br>
 
     {{xdates}}<br><br><br>
-    
-
-    <table border="0" width="40%"  class="datatable w-80 mb-5">
-        <tr>
-            <td>Employee Name</td>
-            <td><b>{{xname}}</b></td>
-        </tr>
-        <tr>
-            <td>Employee ID</td>
-            <td><b>{{xemp_id}}</b></td>
-        </tr>
-    </table>  
+Ako si <b>{{xname}}</b>, bilang isang empleyado / contractor ng Asia-Now-Enterprises Inc ("Kumpanya"), sa pamamagitan nito ay isinasaad at pinapayagan
+ko ang sumusunod:<br><br><br>
 
 
-    <table border="1" class="table dataclient w-80">
+<ul>
+
+<li>
+Ang Natukoy na claim(s) na naka-tag sa ilalim ng aking pangalan ay napapailalim sa mga patakaran ng Kumpanya.<br>
+</li>
+<li>
+Ang aking Awtorisasyon para sa Kumpanya na ibawas ang halagang <b>PHP{{gtotal}}</b> ng claim(s) na nakalakip sa dokumentong ito <b>(Annex A)</b>.<br>
+</li>
+<li>
+Kaugnay ng claim(s) na nakalakip sa dokumentong ito (Annex A), pinapayagan ko n regular na ibawas mula sa aking lingguhan / kalahating Buwanang suweldo / kumisyon
+simula sa pinakamalapit na petsa ng pay-out matapos ko na maisumite ang Authority To Deduct (ADT) na ito.    
+</ul><br>
+
+<div class="ms-5 mb-100 ">
+<p style="width:100% ; display: table;">
+    <span style="display: table-cell; width:10%; border-bottom: 1px solid black;"></span>
+    <span style="display: table-cell; width: 90%;">Option 1 - Buong Amount sa halagang <b>{{gtotal}}</b> sa susunod na sahod.</span>
+</p>
+
+<p style="width:100% ; display: table;">
+    <span style="display: table-cell; width:10%; border-bottom: 1px solid black;"></span>
+    <span style="display: table-cell; width: 90%;">Option 2 - Ibawas sa 2 hulog sa halagang <b><u>{{second_term}}</u></b> bawat hulog.</span>
+</p>
+
+<p style="width:100% ; display: table;">
+    <span style="display: table-cell; width:10%; border-bottom: 1px solid black;"></span>
+    <span style="display: table-cell; width: 90%;">Option 3 - Ibawas sa 4 hulog sa halagang <b><u>{{third_term}}</u></b> bawat hulog.</span>
+</p>
+
+<p style="width:100% ; display: table;">
+    <span style="display: table-cell; width:10%; border-bottom: 1px solid black;"></span>
+    <span style="display: table-cell; width: 90%;">Option 4 - Ibawas sa 6 hulog sa halagang <b><u>{{fourth_term}}</u></b> bawat hulog.</span>
+</p>
+
+<p style="width:100% ; display: table;">
+    <span style="display: table-cell; width:10%; border-bottom: 1px solid black;"></span>
+    <span style="display: table-cell; width: 90%;">Option 5 - Ibawas sa 8 hulog sa halagang <b><u>{{fifth_term}}</u></b> bawat hulog.</span>
+</p>
+
+<p style="width:100% ; display: table;">
+    <span style="display: table-cell; width:10%; border-bottom: 1px solid black;"></span>
+    <span style="display: table-cell; width: 90%;">Option 6 - Ibawas sa 10 hulog sa halagang <b><u>{{sixth_term}}</u></b> bawat hulog.</span>
+</p>
+</div><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+<div class="letters mt-5">
+    <br><br><br>
+    <br><br><br>
+    <br><br><br>
+ <p>Annex A</p>
+
+    <table border="1" class="table datatable w-80">
         <thead> 
           <tr>
             <th>Rider Information</th>
@@ -116,6 +203,7 @@
             <tr>
                 <td align="left" colspan="" >
                    {{rider}}<br>
+                   {{category}}<br>
                    {{hub}}
                 </td>
                 <td>{{track}}</td>
@@ -127,12 +215,13 @@
             {{/each}}
             <tr>
                 <td  align="left"><b>Total</b></td>
-                <td align="right" colspan="3"><b>{{gtotal}}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                <td align="right" colspan="3"><b>{{format_gtotal}}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
 
             </tr>
                 
         </tbody>
     </table><br><br><br><br>
+</div>
 </div>
 
 </body>
