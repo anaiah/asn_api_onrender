@@ -14,12 +14,9 @@
         
         /* Set body font size with px for precision */
         body {
-            font-size: 10px;
-        }
-        p {
             font-size: 9px;
-            color:red;
         }
+      
         .container {
             width: 100%;
             padding: 10px;
@@ -27,7 +24,7 @@
         }
        
         .addy{
-            font-size: 10px;
+            font-size: 9px;
         }
         
         table{
@@ -65,10 +62,7 @@
             display: flow-root;
         } */
         
-        .letters{
-            font-size:10px;
-        }
- 
+        
          /* Print-specific styling */
          @media print {
             .container {
@@ -96,42 +90,44 @@
     {{/each}}
 -->
 
-<div id="pageHeader-first" class="mb-5">
-    <div style="text-align:center"> 
-        <img src="data:image/png;base64,{{logos}}" height="29px" /><br>
-        <span class="addy">
-        <p><B>ASIA NOW ENTERPRISES INC.</B></p>
-        <p>20F Arthaland Century Pacific Tower</p>
-        <p>4th Ave. 30th St., Taguig, Metro Manila</p>
-        <hr>
-        </span>
-        
-    </div>
-</div>
 
-<div id="pageHeader-2" class="mb-5">
-    <div style="text-align:center"> 
-        <img src="data:image/png;base64,{{logos}}" height="29px" /><br>
-        <span class="addy">
-        <p><B>ASIA NOW ENTERPRISES INC.</B></p>
-        <p>20F Arthaland Century Pacific Tower</p>
-        <p>4th Ave. 30th St., Taguig, Metro Manila</p>
-        <hr>
-        </span>
-        
-    </div>
-</div>
 
 <div class="container">
 <!-- cover letter -->
 
-        <br><br><br><br><br>
-        <div class="mt-5" style="text-align:center">
+    <div id="pageHeader-first" class="mb-5">
+        <div style="text-align:center"> 
+            <img src="data:image/png;base64,{{logos}}" height="29px" /><br>
             <span class="addy">
-                <b>AUTHORITY TO DEDUCT</b>
+            <p><B>ASIA NOW ENTERPRISES INC.</B></p>
+            <p>20F Arthaland Century Pacific Tower</p>
+            <p>4th Ave. 30th St., Taguig, Metro Manila</p>
+            <hr>
             </span>
+            
         </div>
-        <br><br><br><br>
+    </div>
+
+    <div id="pageHeader-2" class="mb-5">
+        <div style="text-align:center"> 
+            <img src="data:image/png;base64,{{logos}}" height="29px" /><br>
+            <span class="addy">
+            <p><B>ASIA NOW ENTERPRISES INC.</B></p>
+            <p>20F Arthaland Century Pacific Tower</p>
+            <p>4th Ave. 30th St., Taguig, Metro Manila</p>
+            <hr>
+            </span>
+            
+        </div>
+    </div>
+
+    <br><br><br><br><br>
+    <div class="mt-5" style="text-align:center">
+        <span class="addy">
+            <b>AUTHORITY TO DEDUCT</b>
+        </span>
+    </div>
+    <br><br><br><br>
 
         {{xdates}}<br><br><br>
     Ako si <b>{{xname}}</b>, bilang isang empleyado / contractor ng Asia-Now-Enterprises Inc ("Kumpanya"), sa pamamagitan nito ay isinasaad at pinapayagan
