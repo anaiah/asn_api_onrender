@@ -434,7 +434,6 @@ router.post('/claims', async( req, res) => {
 							const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
 							const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
 							VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-
 							return db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
 						});
 
@@ -687,7 +686,7 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 	
 	}//eif
 
-	console.log( 'Search Claims processing...',sql)
+	console.log( 'Search Claims processing...')
 	
 	connectPg()
 	.then((db)=>{
