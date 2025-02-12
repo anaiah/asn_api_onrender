@@ -1407,7 +1407,7 @@ const strdates = () =>{
 	var yyyy = today.getFullYear()
 	var mos = new Date(`${today.getMonth()+1}/${dd}/${yyyy}`).toLocaleString('en-PH',{month:'long'})
 
-	today = mos + dd +', '+yyyy
+	today = mos + ' '+ dd +', '+yyyy
 	return today
 }
 
