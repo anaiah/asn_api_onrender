@@ -678,9 +678,10 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 		sql = `SELECT distinct(full_name) as rider,
 		emp_id,
 		category,
+		pdf_batch as batch,
 		hubs_location as hub, 
 		sum( amount ) as total from asn_claims
-		group by full_name,emp_id,category,hubs_location
+		group by full_name,emp_id,category,pdf_batch,hubs_location
 		having upper(full_name)like '%${req.params.ename.toUpperCase()}%'
 		order by full_name desc LIMIT 10`
 	
@@ -741,7 +742,7 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 				</tr>
 				<tr>
 				<td colspan=2>
-				<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.createpdf('${req.params.enum}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+				<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${req.params.enum}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
 				</td>
 				</tr>
 				</tbody>
@@ -762,8 +763,59 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 
 })
 
+const pdfBatch = ( emp_id ) =>{
+    var today = new Date()
+    var dd = String(today.getDate()).padStart(2, '0')
+    var mm = String(today.getMonth() + 1).padStart(2, '0') //January is 0!
+    var yyyy = today.getFullYear()
+    var hh = String( today.getHours()).padStart(2,'0')
+    var mmm = String( today.getMinutes()).padStart(2,'0')
+    var ss = String( today.getSeconds()).padStart(2,'0')
+
+    today = `ASN-${yyyy}${mm}${dd}${hh}${mmm}${ss}-${emp_id}`
+    return today
+}
+
+//======= CHECK PDF FIRST BEFORE CREATING ==============
+router.get('/checkpdf/:e_num', async(req, res)=>{
+	const sql = `Select emp_id,pdf_batch from asn_claims
+				where emp_id='${req.params.e_num}' and
+				pdf_batch <> ''
+				order by emp_id`
+
+	connectPg()
+	.then((db)=>{
+		db.query(`${sql}`,(error,results) => {	
+			if(results.rowCount>0){
+				console.log('FOUND!')
+				
+				closePg(db) //close
+
+				res.status(200).json({status:false, batch: results.rows[0].pdf_batch})
+			}else{
+
+				const sql2 = `UPDATE asn_claims SET pdf_batch ='${pdfBatch( req.params.e_num)}'
+							where emp_id='${req.params.e_num}'`
+							
+				db.query(`${sql2}`,(error,data) => {
+					if(data.rowCount>0){
+						console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
+						closePg(db)
+						res.status(200).json({status:true, batch:`${pdfBatch( req.params.e_num)}`})
+					}
+				})
+				
+			}
+		})
+
+	}).catch((error)=>{
+		res.status(500).json({error:'Error'})
+	}) 
+
+})
+
 //======= CREATE PDF
-router.get('/createpdf/:e_num', async(req, res)=>{
+router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 
 	console.log('===createpdf()====', req.params.e_num)
 	const sql = `SELECT distinct(full_name) as rider,
@@ -808,7 +860,7 @@ router.get('/createpdf/:e_num', async(req, res)=>{
 				let nTotal = parseFloat(total_amt).toFixed(2)
 
 				//=== CREATE MEDRX ===========
-				asnpdf.reportpdf( xdata, curr_date,  nFormatTotal, nTotal)
+				asnpdf.reportpdf( xdata, curr_date,  nFormatTotal, nTotal, req.params.batch)
 				.then( reportfile =>{
 					console.log('REPORT PDF SUCCESS!', reportfile)
 					

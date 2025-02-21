@@ -29,19 +29,7 @@ const addCommas = (nStr) => {
 	return x1 + x2;
 }
 
-const Codes = ( emp_id ) =>{
-    var today = new Date()
-    var dd = String(today.getDate()).padStart(2, '0')
-    var mm = String(today.getMonth() + 1).padStart(2, '0') //January is 0!
-    var yyyy = today.getFullYear()
-    var hh = String( today.getHours()).padStart(2,'0')
-    var mmm = String( today.getMinutes()).padStart(2,'0')
-    var ss = String( today.getSeconds()).padStart(2,'0')
 
-
-    today = `ASN-${yyyy}${mm}${dd}${hh}${mmm}${ss}-${emp_id}`
-    return today
-}
 
 module.exports =  {
     tester: async(req, res) =>{
@@ -49,7 +37,7 @@ module.exports =  {
         res.status(200).send('TESTER OK!')
     },
 
-    reportpdf:(xdata, xdate, format_grandtotal, grandtotal)=>{
+    reportpdf:(xdata, xdate, format_grandtotal, grandtotal, batch_code)=>{
         return new Promise((resolve, reject)=> {
            
             //===================START CREATE PDF ======================//
@@ -93,7 +81,7 @@ module.exports =  {
                 rptdata             :   xdata,
                 xname               :   xdata[0].rider,
                 xemp_id             :   xdata[0].emp_id,
-                serialno            :   Codes(xdata[0].emp_id),
+                serialno            :   batch_code,
                 second_term         :   addCommas(parseFloat(grandtotal/2).toFixed(2)) ,
                 third_term          :   addCommas(parseFloat(grandtotal/4).toFixed(2)) ,
                 fourth_term         :   addCommas(parseFloat(grandtotal/6).toFixed(2)),
