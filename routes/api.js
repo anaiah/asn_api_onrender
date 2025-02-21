@@ -741,7 +741,7 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 				</tr>
 				<tr>
 				<td colspan=2>
-				<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.createpdf('${req.params.enum}')">Download PDF</button>
+				<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.createpdf('${req.params.enum}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
 				</td>
 				</tr>
 				</tbody>

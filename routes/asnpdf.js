@@ -39,7 +39,7 @@ const Codes = ( emp_id ) =>{
     var ss = String( today.getSeconds()).padStart(2,'0')
 
 
-    today = `VAN${yyyy}${mm}${dd}${hh}${mmm}${ss}-${emp_id}`
+    today = `ASN-${yyyy}${mm}${dd}${hh}${mmm}${ss}-${emp_id}`
     return today
 }
 
