@@ -808,15 +808,14 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 				
 				console.log(sql2)	
 
-
-				db.query(`${sql2}`,(error,xdata) => {
-					if(xdata.length > 0){
-						console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
-						
-						closeDb(db)
-						res.status(200).json({status:true, batch:`${pdfBatch( req.params.e_num)}`})
-					}
+				db.query(sql2, null, (error,xdata) => {
+					console.log(xdata)
 				})
+
+				console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
+				
+				closeDb(db)
+				res.status(200).json({status:true, batch:`${pdfBatch( req.params.e_num)}`})
 				
 			}
 		})
