@@ -805,10 +805,14 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 
 				const sql2 = `UPDATE asn_claims SET pdf_batch ='${pdfBatch( req.params.e_num)}'
 							where emp_id='${req.params.e_num}'`
-							
-				db.query(`${sql2}`,(error,data) => {
-					if(data.length > 0){
+				
+				console.log(sql2)	
+
+
+				db.query(`${sql2}`,(error,xdata) => {
+					if(xdata.length > 0){
 						console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
+						
 						closeDb(db)
 						res.status(200).json({status:true, batch:`${pdfBatch( req.params.e_num)}`})
 					}
