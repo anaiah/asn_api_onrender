@@ -795,7 +795,7 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
-			if(results.rowCount>0){
+			if(results.length > 0){
 				console.log('FOUND!')
 				
 				closeDb(db) //close
@@ -807,7 +807,7 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 							where emp_id='${req.params.e_num}'`
 							
 				db.query(`${sql2}`,(error,data) => {
-					if(data.rowCount>0){
+					if(data.length > 0){
 						console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
 						closeDb(db)
 						res.status(200).json({status:true, batch:`${pdfBatch( req.params.e_num)}`})
