@@ -544,7 +544,7 @@ router.get('/gethub', async(req, res)=>{
 			group by hubs_location
 			order by sum(amount) desc LIMIT 5`
 		console.log('Top 5 Hub processing...')
-		connectPg		()
+		connectDb()
 		.then((db)=>{
 			db.query(`${sql}`,(error,results) => {	
 			
@@ -604,7 +604,7 @@ router.get('/getrider', async(req, res)=>{
 			group by full_name,emp_id,hubs_location
 			order by sum(amount) desc LIMIT 5`
 		console.log('Top 5 Rider processing...')
-		connectPg		()
+		connectDb()
 		.then((db)=>{
 			db.query(`${sql}`,(error,results) => {	
 			
