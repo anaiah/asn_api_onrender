@@ -141,7 +141,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
         db.query( sql, (err,data) => { 
 			//console.log(data.length)
             //console.log(sql)
-			if ( data.rows.length == 0) {  //data = array 
+			if ( data.length == 0) {  //data = array 
 				console.log('no rec')
                 res.status(400).json({
 					message: "No Matching Record!",
