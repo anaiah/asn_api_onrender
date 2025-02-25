@@ -65,7 +65,7 @@ connectPg()
 connectDb() 
 .then((db)=>{
     console.log("====api.js ZONKED MYSQL CONNECTION SUCCESS!====")
-    closePg(db);
+    closeDb(db);
 })                        
 .catch((error)=>{
     console.log("***ERROR, CAN'T CONNECT TO MYSQL DB!****",error.code)
@@ -96,7 +96,7 @@ router.post('/xxxclaims', upload.single('claims_upload_file'), async (req, res) 
 		
 		const insertPromises =[]
  
-		connectPg()
+		connectDb()
 		.then((db)=>{
 			for( const record of data){
 				const { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
@@ -164,46 +164,46 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 					ipaddress = ipaddress.substring(7)
 				}
 				*/
-                console.log('osndp render login data ',data.rows[0])
+                console.log('osndp render login data ',data[0])
 				//set cookie-parser
 				res.writeHead(200, {
-						"Set-Cookie": `xfname=${data.rows[0].full_name.toUpperCase()}; HttpOnly`,
+						"Set-Cookie": `xfname=${data[0].full_name.toUpperCase()}; HttpOnly`,
 						"Access-Control-Allow-Credentials": "true"
 	  			})
 
 			  res.write(JSON.stringify({
-				email	: 	data.rows[0].email,
-				fname   :   data.rows[0].full_name.toUpperCase(),
-				message	: 	`Welcome to Asia Now Enterprise Incorporated System, ${data.rows[0].full_name.toUpperCase()}! `,
-				voice	: 	`Welcome to Asia Now Enterprise Incorporated System, ${data.rows[0].full_name}! `,		
-				grp_id	:	data.rows[0].grp_id,
-				pic 	: 	data.rows[0].pic,
+				email	: 	data[0].email,
+				fname   :   data[0].full_name.toUpperCase(),
+				message	: 	`Welcome to Asia Now Enterprise Incorporated System, ${data[0].full_name.toUpperCase()}! `,
+				voice	: 	`Welcome to Asia Now Enterprise Incorporated System, ${data[0].full_name}! `,		
+				grp_id	:	data[0].grp_id,
+				pic 	: 	data[0].pic,
 				ip_addy :   ipaddress,
-				id      :   data.rows[0].id,
+				id      :   data[0].id,
 				found:true
 			}))
 
 			res.send()
 			  /*
-				//res.cookie('fname', data.rows[0].full_name.toUpperCase(), { maxAge: 60*1000, httpOnly: true});
-				res.cookie('grp_id', data.rows[0].grp_id, { maxAge: 60*1000,httpOnly: true});
-				res.cookie('f_email',data.rows[0].email, {maxAge: 60*1000,httpOnly: true});
-				res.cookie('f_voice', `Welcome to Executive Optical, O S N D P System ${data.rows[0].full_name}! `, {maxAge: 60*1000,httpOnly: true});
-				res.cookie('f_pic',data.rows[0].pic, {httpOnly: true});
+				//res.cookie('fname', data[0].full_name.toUpperCase(), { maxAge: 60*1000, httpOnly: true});
+				res.cookie('grp_id', data[0].grp_id, { maxAge: 60*1000,httpOnly: true});
+				res.cookie('f_email',data[0].email, {maxAge: 60*1000,httpOnly: true});
+				res.cookie('f_voice', `Welcome to Executive Optical, O S N D P System ${data[0].full_name}! `, {maxAge: 60*1000,httpOnly: true});
+				res.cookie('f_pic',data[0].pic, {httpOnly: true});
 				
 				res.status(200).json({
-					email	: 	data.rows[0].email,
-                    fname   :   data.rows[0].full_name.toUpperCase(),
-                    message	: 	`Welcome to EO-OSNDP ${data.rows[0].full_name.toUpperCase()}! `,
-					voice	: 	`Welcome to Executive Optical, O S N D P System ${data.rows[0].full_name}! `,		
-                    grp_id	:	data.rows[0].grp_id,
-					pic 	: 	data.rows[0].pic,
+					email	: 	data[0].email,
+                    fname   :   data[0].full_name.toUpperCase(),
+                    message	: 	`Welcome to EO-OSNDP ${data[0].full_name.toUpperCase()}! `,
+					voice	: 	`Welcome to Executive Optical, O S N D P System ${data[0].full_name}! `,		
+                    grp_id	:	data[0].grp_id,
+					pic 	: 	data[0].pic,
 					ip_addy :   ipaddress,
 					found:true
                 })
 				*/
 				//=============== CALL FUNCTION, call express method, call func, call router
-				//return res.redirect(`/changepage/${data.rows[0].grp_id}`)
+				//return res.redirect(`/changepage/${data[0].grp_id}`)
 
                 closeDb(db);//CLOSE connection
                 //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
@@ -232,7 +232,7 @@ router.post('/newemppost/', async (req, res) => {
 	console.log('data is', req.body.fullName.toUpperCase(), req.body.birthDate , req.body.jobTitle)
 
 	
-   	connectPg()
+   	connectDb()
     .then((db)=>{
 
 	//$sql = `INSERT INTO asn_employees (emp_id, full_name, email, phone, birth_date, hire_date, job_title, department, employment_status, address) 
@@ -240,7 +240,7 @@ router.post('/newemppost/', async (req, res) => {
 	
 			
 		$sql = `INSERT INTO asn_employees (emp_id, full_name, email, phone, birth_date, hire_date, job_title, department, employment_status, address) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`
+		VALUES (?,?,?,?,?,?,?,?,?,?) `
 			
 		db.query( $sql,
 			[	req.body.employeeId, 
@@ -256,7 +256,7 @@ router.post('/newemppost/', async (req, res) => {
 			(error,result)=>{
 				console.log('inserting..',result.rowCount)
 
-				//results.rows[0]
+				//results[0]
 				res.json({
 					message: "Employee Number " + myfile +" Added Successfully!",
 					voice:"Employee Number " + myfile +" Added Successfully!",
@@ -264,7 +264,7 @@ router.post('/newemppost/', async (req, res) => {
 					status:true
 				})
 	
-				closePg(db);//CLOSE connection
+				closeDb(db);//CLOSE connection
 			
 		})
 		
@@ -431,7 +431,7 @@ router.post('/claims', async( req, res) => {
 
 			const results = [];
 
-			connectPg()
+			connectDb()
 			.then((db)=>{
 
 				fs.createReadStream(fstream.path)
@@ -442,14 +442,14 @@ router.post('/claims', async( req, res) => {
 							
 							const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
 							const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
-							VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+							VALUES (?,?,?,?,?,?,?,?)`
 							return db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
 						});
 
 						Promise.all(queryPromises)
 							.then(() => {
 								fs.unlinkSync(fstream.path); // Remove the file after processing
-								closePg(db)
+								closeDb(db)
 								console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
 								return res.status(200).json({message:'Claims Upload Successfully!',status:true})
 					
@@ -460,7 +460,7 @@ router.post('/claims', async( req, res) => {
 							});
 				});		
 			}).catch((error)=>{
-				closePg(db)
+				closeDb(db)
 	
 				res.status(500).json({error:'Error'})
 			})
@@ -548,9 +548,9 @@ router.get('/gethub', async(req, res)=>{
 		.then((db)=>{
 			db.query(`${sql}`,(error,results) => {	
 			
-				if ( results.rows.length == 0) {   //data = array 
+				if ( results.length == 0) {   //data = array 
 					console.log('no rec')
-					closePg(db);//CLOSE connection
+					closeDb(db);//CLOSE connection
 			
 					res.status(500).send('** No Record Yet! ***')
 			
@@ -568,10 +568,10 @@ router.get('/gethub', async(req, res)=>{
 						<tbody>`
 
 						//iterate top 10
-						for(let zkey in results.rows){
+						for(let zkey in results){
 							xtable+= `<tr>
-							<td >${results.rows[zkey].hub}</td>
-							<td align='right'><b>${addCommas(parseFloat(results.rows[zkey].total).toFixed(2))}</b></td>
+							<td >${results[zkey].hub}</td>
+							<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
 							<tr>`
 
 						}//endfor
@@ -581,7 +581,7 @@ router.get('/gethub', async(req, res)=>{
 						</table>
 						</div>`
 
-						closePg(db);//CLOSE connection
+						closeDb(db);//CLOSE connection
 			
 						res.status(200).send(xtable)				
 					
@@ -608,9 +608,9 @@ router.get('/getrider', async(req, res)=>{
 		.then((db)=>{
 			db.query(`${sql}`,(error,results) => {	
 			
-				if ( results.rows.length == 0) {   //data = array 
+				if ( results.length == 0) {   //data = array 
 					console.log('no rec')
-					closePg(db);//CLOSE connection
+					closeDb(db);//CLOSE connection
 			
 					res.status(500).send('** No Record Yet! ***')
 			
@@ -629,14 +629,14 @@ router.get('/getrider', async(req, res)=>{
 
 
 						//iterate top 10
-						for(let zkey in results.rows){
+						for(let zkey in results){
 							xtable+= `<tr>
 							<td>
-							${results.rows[zkey].rider}<br>
-							${results.rows[zkey].emp_id}<br>
-							${results.rows[zkey].hub}
+							${results[zkey].rider}<br>
+							${results[zkey].emp_id}<br>
+							${results[zkey].hub}
 							</td>
-							<td align='right' valign='bottom'><b>${addCommas(parseFloat(results.rows[zkey].total).toFixed(2))}</b></td>
+							<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
 							</tr>`
 
 						}//endfor
@@ -646,7 +646,7 @@ router.get('/getrider', async(req, res)=>{
 						</table>
 						</div>`
 
-						closePg(db);//CLOSE connection
+						closeDb(db);//CLOSE connection
 			
 						res.status(200).send(xtable)				
 					
@@ -698,13 +698,13 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 
 	console.log( 'Search Claims processing...')
 	
-	connectPg()
+	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 		
-			if ( results.rows.length == 0) {   //data = array 
+			if ( results.length == 0) {   //data = array 
 				console.log('no rec')
-				closePg(db);//CLOSE connection
+				closeDb(db);//CLOSE connection
 		
 				res.status(500).send('** No Record Yet! ***')
 		
@@ -723,16 +723,16 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 
 				//iterate top 10
 				let total_amt = 0
-				for(let zkey in results.rows){
-					total_amt+=parseFloat(results.rows[zkey].total)
+				for(let zkey in results){
+					total_amt+=parseFloat(results[zkey].total)
 
 					xtable+= `<tr>
 					<td>
-					<span class='a2'>${results.rows[zkey].rider}</span><br>
-					<span class='a3'>${results.rows[zkey].emp_id}</span><br>
-					<span class='a3'>${results.rows[zkey].hub}</span>
+					<span class='a2'>${results[zkey].rider}</span><br>
+					<span class='a3'>${results[zkey].emp_id}</span><br>
+					<span class='a3'>${results[zkey].hub}</span>
 					</td>
-					<td align='right' valign='bottom'><b>${addCommas(parseFloat(results.rows[zkey].total).toFixed(2))}</b></td>
+					<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
 					</tr>`
 
 				}//endfor
@@ -758,7 +758,7 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 				</table>
 				</div>`
 
-				closePg(db);//CLOSE connection
+				closeDb(db);//CLOSE connection
 	
 				res.status(200).send(xtable)				
 				
@@ -792,15 +792,15 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 				pdf_batch <> ''
 				order by emp_id`
 
-	connectPg()
+	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 			if(results.rowCount>0){
 				console.log('FOUND!')
 				
-				closePg(db) //close
+				closeDb(db) //close
 
-				res.status(200).json({status:false, batch: results.rows[0].pdf_batch})
+				res.status(200).json({status:false, batch: results[0].pdf_batch})
 			}else{
 
 				const sql2 = `UPDATE asn_claims SET pdf_batch ='${pdfBatch( req.params.e_num)}'
@@ -809,7 +809,7 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 				db.query(`${sql2}`,(error,data) => {
 					if(data.rowCount>0){
 						console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
-						closePg(db)
+						closeDb(db)
 						res.status(200).json({status:true, batch:`${pdfBatch( req.params.e_num)}`})
 					}
 				})
@@ -840,13 +840,13 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 
 	//console.log(sql )
 
-	connectPg()
+	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 		
-			if ( results.rows.length == 0) {   //data = array 
+			if ( results.length == 0) {   //data = array 
 				console.log('no rec')
-				closePg(db);//CLOSE connection
+				closeDb(db);//CLOSE connection
 		
 				res.status(500).send('** No Record Yet! ***')
 		
@@ -854,14 +854,14 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 			
 				let xdata = []
 
-				xdata = results.rows //get result in array
+				xdata = results //get result in array
 				const curr_date = strdates()
 
 				let total_amt = 0
-				for(let zkey in results.rows){
+				for(let zkey in results){
 					
-					total_amt+=parseFloat(results.rows[zkey].total)
-					results.rows[zkey].total= parseFloat(results.rows[zkey].total).toFixed(2) //change to decimal first
+					total_amt+=parseFloat(results[zkey].total)
+					results[zkey].total= parseFloat(results[zkey].total).toFixed(2) //change to decimal first
 					 
 				}//endfor
 
@@ -879,12 +879,12 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 						if(err){
 							console.error('Error in Downloading ',reportfile,err)
 
-							closePg(db)
+							closeDb(db)
 
 							res.status(500).send(`Error in Downloading ${reportfile}`)
 						}else{
 
-							closePg(db)
+							closeDb(db)
 							
 						}
 					}) //===end res.download
@@ -910,7 +910,7 @@ router.get('/deletepdf/:e_num', async(req, res) => {
 			console.log('*** Deleted temp file ', reportfile)
 			
 			//update patient record
-			//closePg(db)
+			//closeDb(db)
 			res.status(200).json({status:true})
 
 		}//eif
