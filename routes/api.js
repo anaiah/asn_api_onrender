@@ -133,7 +133,7 @@ router.post('/xxxclaims', upload.single('claims_upload_file'), async (req, res) 
 router.get('/loginpost/:uid/:pwd',async(req,res)=>{
     console.log('login=>',req.params.uid,req.params.pwd)
     
-    connectPg()
+    connectDb()
     .then((db)=>{
 
 		let sql =`select * from asn_users where email='${req.params.uid}' and pwd='${req.params.pwd}'` 
@@ -149,7 +149,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 					found:false
 				})  
 				
-				closePg(db);//CLOSE connection
+				closeDb(db);//CLOSE connection
                 //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
 
             }else{  //=========== ON SUCCESS!!! ============
@@ -205,7 +205,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 				//=============== CALL FUNCTION, call express method, call func, call router
 				//return res.redirect(`/changepage/${data.rows[0].grp_id}`)
 
-                closePg(db);//CLOSE connection
+                closeDb(db);//CLOSE connection
                 //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
                 
             }//EIF
