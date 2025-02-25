@@ -5,7 +5,7 @@ const app = express()
 const bodyParser = require('body-parser')
 
 //======== for db connection
-const { connectPg, closePg }  = require('./db')
+const { connectPg, closePg, connectDb, closeDb }  = require('./db')
 
 connectPg() 
 .then((pg)=>{
@@ -16,6 +16,14 @@ connectPg()
     console.log("***ERROR, CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
 });  
 
+connectDb() 
+.then((db)=>{
+    console.log("====asn.js ZONKED MYSQL CONNECTION SUCCESS!====")
+    closePg(db);
+})                        
+.catch((error)=>{
+    console.log("***ERROR, CAN'T CONNECT TO MYSQL DB!****",error.code)
+}); 
 
 const http = require('http')
 

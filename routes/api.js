@@ -51,7 +51,7 @@ const ftpclient = require('scp2')
 const app = express()
 
 app.use( cookieParser() )
-const { connectPg, closePg }  = require('../db')
+const { connectPg, closePg, closeDb, connectDb}  = require('../db')
 
 connectPg() 
 .then((pg)=>{
@@ -60,7 +60,16 @@ connectPg()
 })                        
 .catch((error)=>{
     console.log("***ERROR, CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
-});  
+}); 
+
+connectDb() 
+.then((db)=>{
+    console.log("====api.js ZONKED MYSQL CONNECTION SUCCESS!====")
+    closePg(db);
+})                        
+.catch((error)=>{
+    console.log("***ERROR, CAN'T CONNECT TO MYSQL DB!****",error.code)
+}); 
 
 //=====CLAIMS UPLOAD
 // Set up multer for file uploads

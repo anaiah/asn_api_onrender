@@ -1,10 +1,32 @@
-//const mysql = require('mysql2');
+const mysql = require('mysql2');
 const {Client} = require('pg');
 
  
 //const uri = process.env.DB_URL+process.env.DB_NAME
 
 module.exports={
+
+    connectDb :()=>{
+        return new Promise((resolve,reject)=>{
+            const con = mysql.createConnection( {
+                host: process.env.MYSQL_HOST,
+                user: process.env.MYSQL_USER,
+                password: process.env.MYSQL_PWD,
+                database: process.env.MYSQL_DB,
+                multipleStatements: true
+            });
+            con.connect((err) => {
+                if(err){
+                    reject(err);
+                }
+                    resolve(con);
+            });
+        
+        })//END RETURN ,
+    },
+    closeDb : (con)=> {
+        con.destroy();
+    },
 
     connectPg :()=>{
         return new Promise((resolve,reject)=>{
