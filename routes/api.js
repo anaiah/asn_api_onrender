@@ -162,7 +162,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 
 				if (ipaddress.substring(0, 7) == "::ffff:") {
 					ipaddress = ipaddress.substring(7)
-				}
+				} 
 				*/
                 console.log('osndp render login data ',data[0])
 				//set cookie-parser
