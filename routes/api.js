@@ -95,6 +95,7 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
         // Convert the sheet to JSON
         const data = xlsx.utils.sheet_to_json(worksheet);
 		
+		//console.log('json value ', data)
 		const insertPromises =[]
  
 		const dbconfig  ={
@@ -107,11 +108,12 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 
 			for( const record of data){
 				//onst { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
-				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = record ;
-				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
+				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt } = record ;
+				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amount) 
 							VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 				
-				insertPromises.push( await conn.execute( query , [batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]))
+				insertPromises.push( await conn.execute( query , [batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt]))
+				console.log(query,batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt)
 			}
 			await Promise.all(insertPromises)
 			await conn.end()
