@@ -441,7 +441,7 @@ router.post('/claims', async( req, res) => {
 							return new Promise((resolve, reject) =>{
 								const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
 								const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
-								VALUES ($,$,$,$,$,$,$,$)`
+								VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 								
 								db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt], (err,res)=>{
 									if(err) return reject(err);
