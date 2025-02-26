@@ -438,17 +438,14 @@ router.post('/claims', async( req, res) => {
 					.on('data', (data) => results.push(data))
 					.on('end', () => {
 						const queryPromises = results.map(row => {
-							return new Promise((resolve, reject) =>{
+							//return new Promise((resolve, reject) =>{
 								const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
 								const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
 								VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 								
-								db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt], (err,res)=>{
-									if(err) return reject(err);
-									resolve(res)
-								}); // adapt according to your CSV structure
+								return db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
 							
-							})	//end return Promise
+							//})	//end return Promise
 							
 						
 						}); //end querypromises
