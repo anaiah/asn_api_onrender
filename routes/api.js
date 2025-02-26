@@ -460,13 +460,11 @@ router.post('/claims', async( req, res) => {
 									fs.unlinkSync(fstream.path); // Remove the file after processing
 									closePg(db)
 									console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
-									resolve('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
 									return res.status(200).json({message:'Claims Upload Successfully!',status:true})
 						
 								})
 								.catch(err => {
 									console.error(err);
-									reject('error',err)
 									res.status(500).send('Error inserting data');
 								});
 								
