@@ -427,41 +427,34 @@ router.post('/claims', async( req, res) => {
 
 		fstream.on('close', function () {
 			console.log('Closing Stream, Trying to Up load to POSTGRES...')
-		
-
-			const results = [];
-
+			
 			connectDb()
 			.then((db)=>{
 
 				fs.createReadStream(fstream.path)
 					.pipe(csvParser())
-					.on('data', (data) => results.push(data))
+					.on('data', async(row) => {
+						const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
+						const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
+						VALUES (?,?,?,?,?,?,?,?)`
+						
+						console.log(full_name)
+
+						await db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
+						
+					})
 					.on('end', () => {
-						const queryPromises = results.map(row => {
-							
-							const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
-							const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
-							VALUES (?,?,?,?,?,?,?,?)`
-							
-							console.log(full_name)
+						fs.unlinkSync(fstream.path); // Remove the file after processing
+						closeDb(db)
+						console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
+						res.status(200).json({message:'Claims Upload Successfully!',status:true})
+					})
+					.on('error', (error)  => {
+						console.error(error);
+						res.status(500).send('Error inserting CSV data');
+			
+					});	//end createreadstream
 
-							return db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
-						});
-
-						Promise.all(queryPromises)
-							.then(() => {
-								fs.unlinkSync(fstream.path); // Remove the file after processing
-								closeDb(db)
-								console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
-								return res.status(200).json({message:'Claims Upload Successfully!',status:true})
-					
-							})
-							.catch(err => {
-								console.error(err);
-								res.status(500).send('Error inserting data');
-							});
-				});		
 			}).catch((error)=>{
 				closeDb(db)
 	
