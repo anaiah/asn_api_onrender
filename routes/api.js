@@ -440,7 +440,7 @@ router.post('/claims', async( req, res) => {
 						
 						console.log(full_name)
 
-						await db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
+						await db.promise().query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
 						
 					})
 					.on('end', () => {
