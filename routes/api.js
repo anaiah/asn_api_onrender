@@ -443,6 +443,9 @@ router.post('/claims', async( req, res) => {
 							const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
 							const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
 							VALUES (?,?,?,?,?,?,?,?)`
+							
+							console.log(full_name)
+
 							return db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
 						});
 
@@ -809,7 +812,7 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 				console.log(sql2)	
 
 				db.query(sql2, null, (error,xdata) => {
-					console.log(xdata)
+					///console.log(xdata) xdata.affectedRows or changedRows
 				})
 
 				console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
