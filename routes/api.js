@@ -110,7 +110,7 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 				//onst { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
 				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt } = record ;
 				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amount) 
-							VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 				
 				insertPromises.push( await conn.execute( query , [batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt]))
 				console.log(query,batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt)
