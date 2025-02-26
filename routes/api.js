@@ -430,44 +430,41 @@ router.post('/claims', async( req, res) => {
 			
 			const results = [];
 			
-			connectPg()
+			connectDb()
 			.then((db)=>{
 
-					fs.createReadStream(fstream.path)
-						.pipe(csvParser())
-						.on('data', (data) => results.push(data))
-						.on('end', () => {
-							const queryPromises = results.map(row => {
-								return new Promise((resolve, reject) =>{
-									const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
-									const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
-									VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-									
-									db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt], (err,res)=>{
-										if(err) return reject(err);
-										resolve(res)
-									}); // adapt according to your CSV structure
+				fs.createReadStream(fstream.path)
+					.pipe(csvParser())
+					.on('data', (data) => results.push(data))
+					.on('end', () => {
+						const queryPromises = results.map(row => {
+							return new Promise((resolve, reject) =>{
+								const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
+								const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
+								VALUES ($,$,$,$,$,$,$,$)`
 								
-								})	
-								
+								db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt], (err,res)=>{
+									if(err) return reject(err);
+									resolve(res)
+								}); // adapt according to your CSV structure
 							
-							}); //end querypromises
-
-
-
-							Promise.all(queryPromises)
-								.then(() => {
-									fs.unlinkSync(fstream.path); // Remove the file after processing
-									closePg(db)
-									console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
-									return res.status(200).json({message:'Claims Upload Successfully!',status:true})
+							})	//end return Promise
+							
 						
-								})
-								.catch(err => {
-									console.error(err);
-									res.status(500).send('Error inserting data');
-								});
-								
+						}); //end querypromises
+
+						Promise.all(queryPromises)
+						.then(() => {
+							fs.unlinkSync(fstream.path); // Remove the file after processing
+							closeDb(db)
+							console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
+							return res.status(200).json({message:'Claims Upload Successfully!',status:true})
+				
+						})
+						.catch(err => {
+							console.error(err);
+							res.status(500).send('Error inserting data');
+						});
 					
 					});//end createstream
 			}).catch((error)=>{
