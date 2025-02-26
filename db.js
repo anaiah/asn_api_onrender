@@ -6,13 +6,15 @@ const {Client} = require('pg');
 
 module.exports={
 
-    connectDb :()=>{
+    connectDb :async()=>{
+
         return new Promise((resolve,reject)=>{
             const con = mysql.createConnection( {
-                host: process.env.MYSQL_HOST,
-                user: process.env.MYSQL_USER,
-                password: process.env.MYSQL_PWD,
-                database: process.env.MYSQL_DB,
+                host: 'srv1759.hstgr.io',
+                user: 'u899193124_asianow',
+                password: 'g12@c3M312c4',
+                database: 'u899193124_asianow',
+                port:3306,
                 multipleStatements: true
             });
             con.connect((err) => {
@@ -23,6 +25,7 @@ module.exports={
             });
         
         })//END RETURN ,
+        
     },
     closeDb : (con)=> {
         con.destroy();

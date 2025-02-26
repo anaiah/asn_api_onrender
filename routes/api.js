@@ -59,18 +59,17 @@ connectPg()
     closePg(pg);
 })                        
 .catch((error)=>{
-    console.log("***ERROR, CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
+    console.log("***ERROR, API.JS CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
 }); 
 
-connectDb() 
+connectDb()
 .then((db)=>{
-    console.log("====api.js ZONKED MYSQL CONNECTION SUCCESS!====")
+    console.log("====API.JS MYSQL CONNECTION SUCCESS!====")
     closeDb(db);
 })                        
 .catch((error)=>{
     console.log("***ERROR, CAN'T CONNECT TO MYSQL DB!****",error.code)
-}); 
-
+});  
 //=====CLAIMS UPLOAD
 // Set up multer for file uploads
 const storage = multer.memoryStorage();
@@ -395,6 +394,7 @@ router.post('/uploadpdf',  async(req, res)=>{
 })//==end upload
 
 const csvParser = require('csv-parser');
+const mysqls = require('mysql2/promise')
 
 //=== FINAL FOR CLAIMS
 router.post('/claims', async( req, res) => {
@@ -425,50 +425,42 @@ router.post('/claims', async( req, res) => {
 
 		file.resume()
 
-		fstream.on('close', function () {
+		fstream.on('close', async function () {
 			console.log('Closing Stream, Trying to Up load to POSTGRES...')
 			
-			const results = [];
-			
-			connectDb()
-			.then((db)=>{
+			const dbconfig  ={
+                host: 'srv1759.hstgr.io',
+                user: 'u899193124_asianow',
+                password: 'g12@c3M312c4',
+                database: 'u899193124_asianow'
+            }
+			const conn = await mysqls.createConnection(dbconfig);
 
-				fs.createReadStream(fstream.path)
-					.pipe(csvParser())
-					.on('data', (data) => results.push(data))
-					.on('end', () => {
-						const queryPromises = results.map(row => {
-							//return new Promise((resolve, reject) =>{
-								const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
-								const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
+			//console.log(conn)
+			fs.createReadStream(fstream.path)
+				.pipe(csvParser())
+				.on('data', async(row)=>{
+					//console.log('this is row',row)
+					const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = row ;
+					const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
 								VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-								
-								return db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]); // adapt according to your CSV structure
-							
-							//})	//end return Promise
-							
-						
-						}); //end querypromises
-
-						Promise.all(queryPromises)
-						.then(() => {
-							fs.unlinkSync(fstream.path); // Remove the file after processing
-							closeDb(db)
-							console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
-							return res.status(200).json({message:'Claims Upload Successfully!',status:true})
-				
-						})
-						.catch(err => {
-							console.error(err);
-							res.status(500).send('Error inserting data');
-						});
+					//console.log( query ,batch_id,emp_id,full_name)
 					
-					});//end createstream
-			}).catch((error)=>{
-				closeDb(db)
-	
-				res.status(500).json({error:'Error'})
-			})
+					await conn.execute( query , [batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt])
+					//await conn.end()							
+				})
+				.on('end', async()=>{
+					fs.unlinkSync(fstream.path); // Remove the file after processing
+					
+					await conn.end()
+
+			 		console.log('CLOSING STREAM.. CSV UPLOADED SUCCESSFULLY!')
+			 		return res.status(200).json({message:'Claims Upload Successfully!',status:true})
+				})
+				.on('error',(err)=>{
+					console.log('Error processing csv')
+					res.status(500).send('Error processing csv')
+				})
 
 		})//====end fstream
 	})//===end busboy on file 

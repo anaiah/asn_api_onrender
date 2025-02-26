@@ -9,21 +9,21 @@ const { connectPg, closePg, connectDb, closeDb }  = require('./db')
 
 connectPg() 
 .then((pg)=>{
-    console.log("====ASN.JS ZONKED POSTGRESQL CONNECTION SUCCESS!====")
+    console.log("====ASN.JS POSTGRESQL CONNECTION SUCCESS!====")
     closePg(pg);
 })                        
 .catch((error)=>{
     console.log("***ERROR, CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
 });  
 
-connectDb() 
+connectDb()
 .then((db)=>{
-    console.log("====asn.js ZONKED MYSQL CONNECTION SUCCESS!====")
-    closePg(db);
+    console.log("====ASN.JS MYSQL CONNECTION SUCCESS!====")
+    closeDb(db);
 })                        
 .catch((error)=>{
-    console.log("***ERROR, CAN'T CONNECT TO MYSQL DB!****",error.code)
-}); 
+    console.log("***ERROR, ASN.JS CAN'T CONNECT TO MYSQL DB!****",error.code)
+});  
 
 const http = require('http')
 
