@@ -77,11 +77,13 @@ const upload = multer({ storage });
 
 const xlsx = require('xlsx');
 
+const mysqls = require('mysql2/promise')
+
 // Upload endpoint
 
-router.post('/xxxclaims', upload.single('claims_upload_file'), async (req, res) => {
-
-	/*
+router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) => {
+	
+	console.log('==FIRING XLS CLAIMS===')
     try {
         // Read the file buffer
         const workbook = xlsx.read(req.file.buffer);
@@ -95,36 +97,35 @@ router.post('/xxxclaims', upload.single('claims_upload_file'), async (req, res) 
 		
 		const insertPromises =[]
  
-		connectDb()
-		.then((db)=>{
+		const dbconfig  ={
+			host: 'srv1759.hstgr.io',
+			user: 'u899193124_asianow',
+			password: 'g12@c3M312c4',
+			database: 'u899193124_asianow'
+		}
+		const conn = await mysqls.createConnection(dbconfig);
+
 			for( const record of data){
-				const { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
-			
-				//console.log( record.full_name)
-
-				const sql = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amount) 
-						VALUES ($1, $2, $3, $4, $5, $6, $7)`
-
-				insertPromises.push(db.query( sql,[batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt]))
-			}
+				//onst { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
+				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt } = record ;
+				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amount) 
+							VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 				
-			Promise.all(insertPromises)
-			console.log('done upooad ')
-			return res.status(200).json({message:'Claims Upload Successfully!',status:true})
-        
-			
-		}).catch((error)=>{
-			closePg(db)
+				insertPromises.push( await conn.execute( query , [batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, amt]))
+			}
+			await Promise.all(insertPromises)
+			await conn.end()
+		
+			console.log('CLOSING STREAM.. EXCEL FILE UPLOADED SUCCESSFULLY!')
+			return res.status(200).json({message:'Claims Excel File Upload Successfully!',status:true})
 
-			res.status(500).json({error:'Error'})
-		})
 		
 		
     } catch (error) {  //end try
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
-		*/
+		
 });
 
 
@@ -394,7 +395,6 @@ router.post('/uploadpdf',  async(req, res)=>{
 })//==end upload
 
 const csvParser = require('csv-parser');
-const mysqls = require('mysql2/promise')
 
 //=== FINAL FOR CLAIMS
 router.post('/claims', async( req, res) => {
