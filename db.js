@@ -1,4 +1,4 @@
-const mysql = require('mysql2/promise'); //use promise based mysql2
+const mysql = require('mysql2'); //use promise based mysql2
 const {Client} = require('pg');
 
  
