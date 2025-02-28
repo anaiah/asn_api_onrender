@@ -79,8 +79,14 @@ const xlsx = require('xlsx');
 
 const mysqls = require('mysql2/promise')
 
-// Upload endpoint
+const dbconfig  ={
+	host: 'srv1759.hstgr.io',
+	user: 'u899193124_asianow',
+	password: 'g12@c3M312c4',
+	database: 'u899193124_asianow'
+}
 
+// Upload endpoint
 router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) => {
 	
 	console.log('==FIRING XLS CLAIMS===')
@@ -98,12 +104,7 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 		//console.log('json value ', data)
 		const insertPromises =[]
  
-		const dbconfig  ={
-			host: 'srv1759.hstgr.io',
-			user: 'u899193124_asianow',
-			password: 'g12@c3M312c4',
-			database: 'u899193124_asianow'
-		}
+		
 		const conn = await mysqls.createConnection(dbconfig);
 
 			for( const record of data){
@@ -534,6 +535,59 @@ const drseq = () => {
 
 	return today
 }
+
+///===== get update total claims
+router.get('/claimsupdate', async (req,res)=>{
+
+	const sql = `select distinct( DATE_FORMAT(uploaded_at,'%M %d, %Y')) as xdate, round(sum(amount)) as total 
+	from asn_claims group by uploaded_at order by uploaded_at DESC limit 4;`
+
+	connectDb()
+	.then((db)=>{
+		db.query(`${sql}`,(error,results) => {	
+			if ( results.length == 0) {   //data = array 
+				console.log('no rec')
+				closeDb(db);//CLOSE connection
+		
+				res.status(500).send('** No Record Yet! ***')
+		
+			}else{ 
+				let xtable = '', xtotal = 0
+
+				//iterate top 10
+				
+				for(let zkey in results){
+
+					xtotal += parseFloat(results[zkey].total)
+
+					xtable+= `
+					<li class="timeline-item d-flex position-relative overflow-hidden">
+					<div class="timeline-time text-dark flex-shrink-0 text-end">${results[zkey].xdate}</div>
+					<div class="timeline-badge-wrap d-flex flex-column align-items-center">
+						<span class="timeline-badge border-2 border border-primary flex-shrink-0 my-8"></span>
+						<span class="timeline-badge-border d-block flex-shrink-0"></span>
+					</div>
+					<div class="timeline-desc fs-3 text-dark mt-n1">Claims Update <p class='border border-success  text-primary align-right'>
+						<b>P ${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></p></div>
+					</li>`
+				}
+
+				xtable+=`</ul><input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
+
+				closeDb(db);//CLOSE connection
+			
+				res.status(200).send(xtable)				
+			
+
+			}
+
+		})
+	}).catch((error)=>{
+		res.status(500).json({error:'Error'})
+	}) 
+
+
+})
 
 //==========top 10 
 router.get('/gethub', async(req, res)=>{
