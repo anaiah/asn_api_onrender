@@ -183,6 +183,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 				pic 	: 	data[0].pic,
 				ip_addy :   ipaddress,
 				id      :   data[0].id,
+				region  :   data[0].region,
 				found:true
 			}))
 
@@ -590,12 +591,14 @@ router.get('/claimsupdate', async (req,res)=>{
 })
 
 //==========top 10 
-router.get('/gethub', async(req, res)=>{
+router.get('/gethub/:eregion', async(req, res)=>{
 
+	const cTable = `asn_claims_${req.params.eregion.toLowerCase()}`
 	sql = `SELECT distinct(hubs_location) as hub, 
-			sum( amount ) as total from asn_claims
+			sum( amount ) as total from ${cTable}
 			group by hubs_location
 			order by sum(amount) desc LIMIT 5`
+
 		console.log('Top 5 Hub processing...')
 		connectDb()
 		.then((db)=>{
@@ -611,6 +614,7 @@ router.get('/gethub', async(req, res)=>{
 				
 					let xtable = 
 					`<div class="col-lg-8">
+						<h2>(${cTable})</h2>
 						<table class="table"> 
 						<thead>
 							<tr>
@@ -649,71 +653,78 @@ router.get('/gethub', async(req, res)=>{
 })
 
 //================= TOP 5 RIDER
-router.get('/getrider', async(req, res)=>{
+router.get('/getrider/:eregion', async(req, res)=>{
+
+	const cTable = `asn_claims_${req.params.eregion.toLowerCase()}`
 
 	sql = `SELECT distinct(full_name) as rider,emp_id,
 			hubs_location as hub, 
-			sum( amount ) as total from asn_claims
+			sum( amount ) as total from ${cTable}
 			group by full_name,emp_id,hubs_location
 			order by sum(amount) desc LIMIT 5`
-		console.log('Top 5 Rider processing...')
-		connectDb()
-		.then((db)=>{
-			db.query(`${sql}`,(error,results) => {	
+	console.log('Top 5 Rider processing...')
+	connectDb()
+	.then((db)=>{
+		db.query(`${sql}`,(error,results) => {	
+		
+			if ( results.length == 0) {   //data = array 
+				console.log('no rec')
+				closeDb(db);//CLOSE connection
+		
+				res.status(500).send('** No Record Yet! ***')
+		
+			}else{ 
 			
-				if ( results.length == 0) {   //data = array 
-					console.log('no rec')
+				let xtable = 
+					`<div class="col-lg-8">
+					<h2>(${cTable})</h2>
+					<table class="table"> 
+					<thead>
+						<tr>
+						<th>Rider</th>
+						<th align=right>Amount</th>
+						</tr>
+					</thead>
+					<tbody>`
+
+					//iterate top 10
+					for(let zkey in results){
+						xtable+= `<tr>
+						<td>
+						${results[zkey].rider}<br>
+						${results[zkey].emp_id}<br>
+						${results[zkey].hub}
+						</td>
+						<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
+						</tr>`
+
+					}//endfor
+
+					xtable+=	
+					`</tbody>
+					</table>
+					</div>`
+
 					closeDb(db);//CLOSE connection
-			
-					res.status(500).send('** No Record Yet! ***')
-			
-				}else{ 
+		
+					res.status(200).send(xtable)				
 				
-					let xtable = 
-						`<div class="col-lg-8">
-						<table class="table w-100	" > 
-						<thead>
-							<tr>
-							<th>Rider</th>
-							<th align=right>Amount</th>
-							</tr>
-						</thead>
-						<tbody>`
+			}//eif
+		
+		})
 
+	}).catch((error)=>{
+		res.status(500).json({error:'Error'})
+	}) 
 
-						//iterate top 10
-						for(let zkey in results){
-							xtable+= `<tr>
-							<td>
-							${results[zkey].rider}<br>
-							${results[zkey].emp_id}<br>
-							${results[zkey].hub}
-							</td>
-							<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
-							</tr>`
+})
+//======= end top 10
 
-						}//endfor
-
-						xtable+=	
-						`</tbody>
-						</table>
-						</div>`
-
-						closeDb(db);//CLOSE connection
-			
-						res.status(200).send(xtable)				
-					
-				}//eif
-			
-			})
-
-		}).catch((error)=>{
-			res.status(500).json({error:'Error'})
-		}) 
+//==== get how many have atd's
+router.get('/atdupdate', async( req, res) => {
 
 })
 
-//======= end top 10
 router.get('/getrecord/:enum/:ename', async(req, res)=>{
 	let sql
 
