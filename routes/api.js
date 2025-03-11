@@ -538,10 +538,12 @@ const drseq = () => {
 }
 
 ///===== get update total claims
-router.get('/claimsupdate', async (req,res)=>{
+router.get('/claimsupdate/:eregion', async (req,res)=>{
+
+	const cTable = `asn_claims_${req.params.eregion.toLowerCase()}`
 
 	const sql = `select distinct( DATE_FORMAT(uploaded_at,'%M %d, %Y')) as xdate, round(sum(amount)) as total 
-	from asn_claims group by uploaded_at order by uploaded_at DESC limit 4;`
+	from ${cTable} group by uploaded_at order by uploaded_at DESC limit 4;`
 
 	connectDb()
 	.then((db)=>{
@@ -579,14 +581,12 @@ router.get('/claimsupdate', async (req,res)=>{
 			
 				res.status(200).send(xtable)				
 			
-
 			}
 
 		})
 	}).catch((error)=>{
 		res.status(500).json({error:'Error'})
 	}) 
-
 
 })
 
@@ -649,7 +649,6 @@ router.get('/gethub/:eregion', async(req, res)=>{
 		}).catch((error)=>{
 			res.status(500).json({error:'Error'})
 		}) 
-
 })
 
 //================= TOP 5 RIDER
