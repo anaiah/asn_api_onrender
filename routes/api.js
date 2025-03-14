@@ -55,7 +55,7 @@ const { connectPg, closePg, closeDb, connectDb}  = require('../db')
 
 connectPg() 
 .then((pg)=>{
-    console.log("====api.js ZONKED POSTGRESQL CONNECTION SUCCESS!====")
+    console.log("====api.js ASIANOW POSTGRESQL CONNECTION SUCCESS!====")
     closePg(pg);
 })                        
 .catch((error)=>{
@@ -64,7 +64,7 @@ connectPg()
 
 connectDb()
 .then((db)=>{
-    console.log("====API.JS MYSQL CONNECTION SUCCESS!====")
+    console.log("====API.JS ASIANOW MYSQL CONNECTION SUCCESS!====")
     closeDb(db);
 })                        
 .catch((error)=>{
@@ -139,8 +139,14 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
     connectDb()
     .then((db)=>{
 
-		let sql =`select * from asn_users where email='${req.params.uid}' and pwd='${req.params.pwd}'` 
-        console.log(`${sql}`)
+		let sql =`SELECT a.id,a.full_name, 
+			a.email, GROUP_CONCAT(distinct a.region) as region, 
+			a.grp_id,a.pic 
+			from asn_users a 
+			WHERE a.email='${req.params.uid}' and a.pwd='${req.params.pwd}'` 
+        
+			console.log(`${sql}`)
+
         db.query( sql, (err,data) => { 
 			//console.log(data.length)
             //console.log(sql)
@@ -538,13 +544,19 @@ const drseq = () => {
 }
 
 ///===== get update total claims
-router.get('/claimsupdate/:eregion', async (req,res)=>{
+router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 
-	const cTable = `asn_claims_${req.params.eregion.toLowerCase()}`
+	const sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
+	round(sum(a.amount)) as total,
+	b.email 
+	from asn_claims a
+	join asn_spx_hubs b
+	on a.hubs_location = b.hub
+	group by a.uploaded_at,b.email
+	having b.email = '${req.params.email}'
+	order by a.uploaded_at DESC limit 4;`
 
-	const sql = `select distinct( DATE_FORMAT(uploaded_at,'%M %d, %Y')) as xdate, round(sum(amount)) as total 
-	from ${cTable} group by uploaded_at order by uploaded_at DESC limit 4;`
-
+	console.log(sql)
 	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
@@ -591,14 +603,21 @@ router.get('/claimsupdate/:eregion', async (req,res)=>{
 })
 
 //==========top 10 
-router.get('/gethub/:eregion', async(req, res)=>{
+router.get('/gethub/:eregion/:email', async(req, res)=>{
+	
+	sql = `SELECT distinct(a.hubs_location) as hub, 
+			sum( a.amount ) as total ,
+			b.region as region,
+			b.email
+			from asn_claims a
+			join asn_spx_hubs b
+			on a.hubs_location = b.hub
+			group by a.hubs_location,b.region
+			having b.email = '${req.params.email}'
+			order by sum(a.amount) desc LIMIT 5`
 
-	const cTable = `asn_claims_${req.params.eregion.toLowerCase()}`
-	sql = `SELECT distinct(hubs_location) as hub, 
-			sum( amount ) as total from ${cTable}
-			group by hubs_location
-			order by sum(amount) desc LIMIT 5`
 
+		console.log(sql)
 		console.log('Top 5 Hub processing...')
 		connectDb()
 		.then((db)=>{
@@ -613,11 +632,14 @@ router.get('/gethub/:eregion', async(req, res)=>{
 				}else{ 
 				
 					let xtable = 
-					`<div class="col-lg-8">
-						<h2>(${cTable})</h2>
-						<table class="table"> 
+					
+					`
+					<h2>(${req.params.eregion.toUpperCase()})</h2>
+					<div class="col-lg-8">
+							<table class="table"> 
 						<thead>
 							<tr>
+							<th>Region</th>
 							<th>Hub Location</th>
 							<th>Amount</th>
 							</tr>
@@ -627,6 +649,7 @@ router.get('/gethub/:eregion', async(req, res)=>{
 						//iterate top 10
 						for(let zkey in results){
 							xtable+= `<tr>
+							<td>${results[zkey].region}</td>
 							<td >${results[zkey].hub}</td>
 							<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
 							<tr>`
@@ -652,16 +675,23 @@ router.get('/gethub/:eregion', async(req, res)=>{
 })
 
 //================= TOP 5 RIDER
-router.get('/getrider/:eregion', async(req, res)=>{
+router.get('/getrider/:eregion/:email', async(req, res)=>{
 
-	const cTable = `asn_claims_${req.params.eregion.toLowerCase()}`
-
-	sql = `SELECT distinct(full_name) as rider,emp_id,
-			hubs_location as hub, 
-			sum( amount ) as total from ${cTable}
-			group by full_name,emp_id,hubs_location
-			order by sum(amount) desc LIMIT 5`
+	
+	sql = `SELECT distinct(a.full_name) as rider, 
+	a.hubs_location as hub, 
+	b.email, a.emp_id,
+	sum( a.amount ) as total , 
+	b.region as region 
+	from asn_claims a 
+	join asn_spx_hubs b 
+	on a.hubs_location = b.hub 
+	group by a.full_name,a.hubs_location,b.region,b.email,a.emp_id 
+	having b.email = '${req.params.email}'
+	order by sum(a.amount) desc LIMIT 5;`
+	
 	console.log('Top 5 Rider processing...')
+	
 	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
@@ -676,7 +706,7 @@ router.get('/getrider/:eregion', async(req, res)=>{
 			
 				let xtable = 
 					`<div class="col-lg-8">
-					<h2>(${cTable})</h2>
+					<h2>(${req.params.eregion.toUpperCase()})</h2>
 					<table class="table"> 
 					<thead>
 						<tr>
@@ -691,6 +721,7 @@ router.get('/getrider/:eregion', async(req, res)=>{
 						xtable+= `<tr>
 						<td>
 						${results[zkey].rider}<br>
+						${results[zkey].region}<br>
 						${results[zkey].emp_id}<br>
 						${results[zkey].hub}
 						</td>
@@ -724,48 +755,69 @@ router.get('/atdupdate', async( req, res) => {
 
 })
 
-router.get('/getrecord/:enum/:ename', async(req, res)=>{
+router.get('/getrecord/:enum/:ename/:email', async(req, res)=>{
 	let sql
 
 	if ( req.params.ename!=="blank" &&  req.params.enum!== "blank"){
-		sql = `SELECT distinct(full_name) as rider,
-		emp_id,
-		category,
-		hubs_location as hub, 
-		sum( amount ) as total from asn_claims
-		group by full_name,emp_id,category,hubs_location
-		having emp_id like '%${req.params.enum}%' or
-		upper(full_name)like '%${req.params.ename.toUpperCase()}%'
-		order by full_name desc LIMIT 10`
- 	}else if( req.params.enum!== "blank"){
-		sql = `SELECT distinct(full_name) as rider,
-		emp_id,
-		category,
-		hubs_location as hub, 
-		sum( amount ) as total from asn_claims
-		group by full_name,emp_id,category,hubs_location
-		having emp_id like '%${req.params.enum}%'
-		order by full_name desc LIMIT 10`
-	}else if ( req.params.ename!=="blank"){
-		sql = `SELECT distinct(full_name) as rider,
-		emp_id,
-		category,
-		pdf_batch as batch,
-		hubs_location as hub, 
-		sum( amount ) as total from asn_claims
-		group by full_name,emp_id,category,pdf_batch,hubs_location
-		having upper(full_name)like '%${req.params.ename.toUpperCase()}%'
-		order by full_name desc LIMIT 10`
+		sql = 
+		`SELECT distinct(a.full_name) as rider, 
+		a.hubs_location as hub, 
+		b.email, 
+		a.emp_id,
+		sum( a.amount ) as total , 
+		a.category,
+		b.region as region 
+		from asn_claims a 
+		join asn_spx_hubs b 
+		on a.hubs_location = b.hub 
+		group by a.full_name,a.hubs_location,b.email,a.emp_id,a.category,b.region 
+		having ( a.emp_id like '%${req.params.enum}%' or upper(a.full_name) like '%${req.params.ename.toUpperCase()}%')
+		and b.email = '${req.params.email}'	
+		order by a.full_name desc LIMIT 10;`	
 	
+ 	}else if( req.params.enum!== "blank"  &&  req.params.ename == "blank"){
+
+		sql = 
+		`SELECT distinct(a.full_name) as rider, 
+		a.hubs_location as hub, 
+		b.email, 
+		a.emp_id,
+		sum( a.amount ) as total , 
+		a.category,
+		b.region as region 
+		from asn_claims a 
+		join asn_spx_hubs b 
+		on a.hubs_location = b.hub 
+		group by a.full_name,a.hubs_location,b.email,a.emp_id,a.category,b.region 
+		having a.emp_id like '%${req.params.enum}%' and b.email = '${req.params.email}'	
+		order by a.full_name desc LIMIT 10;`	
+		
+		
+	}else if ( req.params.ename!=="blank"  &&  req.params.enum == "blank"){
+		sql = 
+		`SELECT distinct(a.full_name) as rider, 
+		a.hubs_location as hub, 
+		b.email, 
+		a.emp_id,
+		sum( a.amount ) as total , 
+		a.category,
+		b.region as region 
+		from asn_claims a 
+		join asn_spx_hubs b 
+		on a.hubs_location = b.hub 
+		group by a.full_name,a.hubs_location,b.email,a.emp_id,a.category,b.region 
+		having upper(a.full_name)like '%${req.params.ename.toUpperCase()}%' and b.email = '${req.params.email}'	
+		order by a.full_name desc LIMIT 10;`
 	}//eif
 
 	console.log( 'Search Claims processing...')
+	console.log(sql)
 	
 	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
-		
-			if ( results.length == 0) {   //data = array 
+		     console.log( results)
+			if ( ! results ) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
@@ -835,8 +887,46 @@ router.get('/getrecord/:enum/:ename', async(req, res)=>{
 
 })
 
-const pdfBatch = ( emp_id ) =>{
-    var today = new Date()
+
+
+const pdfBatch =  ( emp_id ) =>{
+	return new Promise((resolve, reject)=> {
+		const sql = `Select sequence from asn_pdf_sequence;`
+		let xcode, seq
+	
+		connectDb()
+		.then((db)=>{
+			db.query(`${sql}`,(error,results) => {
+				if(results.length>0){
+					
+					seq = results[0].sequence+1
+					//console.log(results,seq)
+					//console.log( seq.toString().padStart(5,"0") )
+					const usql = `update asn_pdf_sequence set sequence = ${seq}`
+					
+					db.query(`${usql}`,(error,udata) => {
+					})
+	
+					xcode =`ASN-${seq.toString().padStart(5,"0")}`
+
+					
+				}
+	
+				closeDb(db)
+				//console.log(xcode)
+				resolve( xcode )
+				
+			})
+		}).catch((error)=>{
+			reject(error)
+			res.status(500).json({error:'Error'})
+		})
+	})
+
+
+	 
+	/*
+		var today = new Date()
     var dd = String(today.getDate()).padStart(2, '0')
     var mm = String(today.getMonth() + 1).padStart(2, '0') //January is 0!
     var yyyy = today.getFullYear()
@@ -846,18 +936,29 @@ const pdfBatch = ( emp_id ) =>{
 
     today = `ASN-${yyyy}${mm}${dd}${hh}${mmm}${ss}-${emp_id}`
     return today
+	*/
+	
 }
+
+router.get('/pdfx', async(req,res)=>{
+	
+	 let xxx =  await pdfBatch('205214')
+	console.log('serial',xxx)
+	res.status(200).json({status:'ok'})
+})
+
 
 //======= CHECK PDF FIRST BEFORE CREATING ==============
 router.get('/checkpdf/:e_num', async(req, res)=>{
+
 	const sql = `Select emp_id,pdf_batch from asn_claims
-				where emp_id='${req.params.e_num}' and
-				pdf_batch <> ''
-				order by emp_id`
+			where emp_id='${req.params.e_num}' and
+			pdf_batch <> ''
+			order by emp_id`
 
 	connectDb()
 	.then((db)=>{
-		db.query(`${sql}`,(error,results) => {	
+		db.query(`${sql}`,async(error,results) => {	
 			if(results.length > 0){
 				console.log('FOUND!')
 				
@@ -865,8 +966,9 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 
 				res.status(200).json({status:false, batch: results[0].pdf_batch})
 			}else{
+				const seq = await pdfBatch( req.params.e_num)
 
-				const sql2 = `UPDATE asn_claims SET pdf_batch ='${pdfBatch( req.params.e_num)}'
+				const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
 							where emp_id='${req.params.e_num}'`
 				
 				console.log(sql2)	
@@ -878,7 +980,7 @@ router.get('/checkpdf/:e_num', async(req, res)=>{
 				console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
 				
 				closeDb(db)
-				res.status(200).json({status:true, batch:`${pdfBatch( req.params.e_num)}`})
+				res.status(200).json({status:true, batch:`${seq}`})
 				
 			}
 		})

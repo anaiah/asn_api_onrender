@@ -9,7 +9,7 @@ const { connectPg, closePg, connectDb, closeDb }  = require('./db')
 
 connectPg() 
 .then((pg)=>{
-    console.log("====ASN.JS POSTGRESQL CONNECTION SUCCESS!====")
+    console.log("====ASN.JS ASIANOW POSTGRESQL CONNECTION SUCCESS!====")
     closePg(pg);
 })                        
 .catch((error)=>{
@@ -18,7 +18,7 @@ connectPg()
 
 connectDb()
 .then((db)=>{
-    console.log("====ASN.JS MYSQL CONNECTION SUCCESS!====")
+    console.log("====ASN.JS ASIANOW MYSQL CONNECTION SUCCESS!====")
     closeDb(db);
 })                        
 .catch((error)=>{
