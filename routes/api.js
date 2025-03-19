@@ -148,18 +148,23 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 			console.log(`${sql}`)
 
         db.query( sql, (err,data) => { 
+
+			console.log( data)
 			//console.log(data.length)
             //console.log(sql)
-			if ( data.length == 0) {  //data = array 
+			if ( data[0].full_name == null) {  //data = array 
 				console.log('no rec')
-                res.status(400).json({
+
+				closeDb(db);//CLOSE connection
+                //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
+
+                return res.status(400).json({
 					message: "No Matching Record!",
 					voice:"No Matching Record!",
 					found:false
 				})  
 				
-				closeDb(db);//CLOSE connection
-                //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
+				
 
             }else{  //=========== ON SUCCESS!!! ============
 
@@ -617,61 +622,61 @@ router.get('/gethub/:eregion/:email', async(req, res)=>{
 			order by sum(a.amount) desc LIMIT 5`
 
 
-		console.log(sql)
-		console.log('Top 5 Hub processing...')
-		connectDb()
-		.then((db)=>{
-			db.query(`${sql}`,(error,results) => {	
+	//console.log(sql)
+	console.log('Top 5 Hub processing...')
+	connectDb()
+	.then((db)=>{
+		db.query(`${sql}`,(error,results) => {	
+		
+			if ( results.length == 0) {   //data = array 
+				console.log('no rec')
+				closeDb(db);//CLOSE connection
+		
+				res.status(500).send('** No Record Yet! ***')
+		
+			}else{ 
 			
-				if ( results.length == 0) {   //data = array 
-					console.log('no rec')
-					closeDb(db);//CLOSE connection
-			
-					res.status(500).send('** No Record Yet! ***')
-			
-				}else{ 
+				let xtable = 
 				
-					let xtable = 
-					
-					`
-					<h2>(${req.params.eregion.toUpperCase()})</h2>
-					<div class="col-lg-8">
-							<table class="table"> 
-						<thead>
-							<tr>
-							<th>Region</th>
-							<th>Hub Location</th>
-							<th>Amount</th>
-							</tr>
-						</thead>
-						<tbody>`
+				`
+				<h2>(${req.params.eregion.toUpperCase()})</h2>
+				<div class="col-lg-8">
+						<table class="table"> 
+					<thead>
+						<tr>
+						<th>Region</th>
+						<th>Hub Location</th>
+						<th>Amount</th>
+						</tr>
+					</thead>
+					<tbody>`
 
-						//iterate top 10
-						for(let zkey in results){
-							xtable+= `<tr>
-							<td>${results[zkey].region}</td>
-							<td >${results[zkey].hub}</td>
-							<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
-							<tr>`
+					//iterate top 10
+					for(let zkey in results){
+						xtable+= `<tr>
+						<td>${results[zkey].region}</td>
+						<td >${results[zkey].hub}</td>
+						<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
+						<tr>`
 
-						}//endfor
+					}//endfor
 
-						xtable+=	
-						`</tbody>
-						</table>
-						</div>`
+					xtable+=	
+					`</tbody>
+					</table>
+					</div>`
 
-						closeDb(db);//CLOSE connection
-			
-						res.status(200).send(xtable)				
-					
-				}//eif
-			
-			})
+					closeDb(db);//CLOSE connection
+		
+					res.status(200).send(xtable)				
+				
+			}//eif
+		
+		})
 
-		}).catch((error)=>{
-			res.status(500).json({error:'Error'})
-		}) 
+	}).catch((error)=>{
+		res.status(500).json({error:'Error'})
+	}) 
 })
 
 //================= TOP 5 RIDER
@@ -682,7 +687,7 @@ router.get('/getrider/:eregion/:email', async(req, res)=>{
 	a.hubs_location as hub, 
 	b.email, a.emp_id,
 	sum( a.amount ) as total , 
-	b.region as region 
+	b.region as region
 	from asn_claims a 
 	join asn_spx_hubs b 
 	on a.hubs_location = b.hub 
@@ -750,10 +755,79 @@ router.get('/getrider/:eregion/:email', async(req, res)=>{
 })
 //======= end top 10
 
-//==== get how many have atd's
-router.get('/atdupdate', async( req, res) => {
 
+
+router.get('/getfinance/:region/:email', async( req, res) =>{
+	
+	sql = `SELECT distinct(a.hubs_location) as hub, 
+			sum( a.amount ) as total ,
+			b.region as region,
+			b.email
+			from asn_claims a
+			join asn_spx_hubs b
+			on a.hubs_location = b.hub
+			group by a.hubs_location,b.region
+			having b.region = '${req.params.region}'
+			`
+
+
+		console.log(sql)
+		console.log('LIST OF ATDS FOR CROSSCHEK...')
+		connectDb()
+		.then((db)=>{
+			db.query(`${sql}`,(error,results) => {	
+			
+				if ( results.length == 0) {   //data = array 
+					console.log('no rec')
+					closeDb(db);//CLOSE connection
+			
+					res.status(500).send('** No Record Yet! ***')
+			
+				}else{ 
+				
+					let xtable = 
+					
+					`
+					<h2>(${req.params.region.toUpperCase()})</h2>
+					<div class="col-lg-8">
+							<table class="table"> 
+						<thead>
+							<tr>
+							<th>Region</th>
+							<th>Hub Location</th>
+							<th>Amount</th>
+							</tr>
+						</thead>
+						<tbody>`
+
+						//iterate top 10
+						for(let zkey in results){
+							xtable+= `<tr>
+							<td>${results[zkey].region}</td>
+							<td >${results[zkey].hub}</td>
+							<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
+							<tr>`
+
+						}//endfor
+
+						xtable+=	
+						`</tbody>
+						</table>
+						</div>`
+
+						closeDb(db);//CLOSE connection
+			
+						res.status(200).send(xtable)				
+					
+				}//eif
+			
+			})
+
+		}).catch((error)=>{
+			res.status(500).json({error:'Error'})
+		}) 
 })
+
 
 router.get('/getrecord/:enum/:ename/:email', async(req, res)=>{
 	let sql
@@ -766,7 +840,9 @@ router.get('/getrecord/:enum/:ename/:email', async(req, res)=>{
 		a.emp_id,
 		sum( a.amount ) as total , 
 		a.category,
-		b.region as region 
+		b.region as region ,
+		a.pdf_batch,
+		a.batch_file
 		from asn_claims a 
 		join asn_spx_hubs b 
 		on a.hubs_location = b.hub 
@@ -784,7 +860,9 @@ router.get('/getrecord/:enum/:ename/:email', async(req, res)=>{
 		a.emp_id,
 		sum( a.amount ) as total , 
 		a.category,
-		b.region as region 
+		b.region as region,
+		a.pdf_batch,
+		a.batch_file 
 		from asn_claims a 
 		join asn_spx_hubs b 
 		on a.hubs_location = b.hub 
@@ -801,7 +879,9 @@ router.get('/getrecord/:enum/:ename/:email', async(req, res)=>{
 		a.emp_id,
 		sum( a.amount ) as total , 
 		a.category,
-		b.region as region 
+		b.region as region,
+		a.pdf_batch,
+		a.batch_file 
 		from asn_claims a 
 		join asn_spx_hubs b 
 		on a.hubs_location = b.hub 
@@ -825,8 +905,17 @@ router.get('/getrecord/:enum/:ename/:email', async(req, res)=>{
 		
 			}else{ 
 			
+				let pdfbatch
+
+				console.log(results[0].pdf_batch)
+				if( results[0].pdf_batch!==null ){
+					pdfbatch = "ATD # " + results[0].pdf_batch
+				}else{
+					pdfbatch = "ATD PDF NOT YET PROCESSED"
+				}
 				let xtable = 
 				`<div class="col-lg-8">
+					<div class='ms-2'><H2 style="color:#dc4e41">${pdfbatch}</H2></div>
 				<table class="table w-100	" > 
 				<thead>
 					<tr>
@@ -845,7 +934,9 @@ router.get('/getrecord/:enum/:ename/:email', async(req, res)=>{
 					<td>
 					<span class='a2'>${results[zkey].rider}</span><br>
 					<span class='a3'>${results[zkey].emp_id}</span><br>
-					<span class='a3'>${results[zkey].hub}</span>
+					<span class='a3'>${results[zkey].hub}</span><br>
+					<span class='a3'>Batch # ${results[zkey].batch_file}</span>
+					
 					</td>
 					<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
 					</tr>`
