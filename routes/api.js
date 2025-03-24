@@ -1015,11 +1015,11 @@ router.get('/getlistpdf/:limit/:page', async(req,res) => {
 	
 	console.log(`firing getlistpdf/${req.params.limit}/${req.params.page}`)
 
-	const limit_num = req.params.limit
+	const limit_num = 30 //take out Mar 27,2025 req.params.limit, make a hard value of 30
 	let nStart = 0	
 	let page = req.params.page
 	
-	connectDb()
+	connectDb() 
 	.then((db)=>{
 		
 		let sql = `SELECT distinct(a.emp_id) as emp_id,
@@ -1241,7 +1241,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 	//console.log(req.params.grp_id)
 
-	if( req.params.grp_id!=="2"){
+	if( req.params.grp_id!=="2"){ //if the one checking is not ARE COORDINATOR allow to re-print/download pdf
 		const sql = `Select emp_id,pdf_batch from asn_claims
 			where emp_id='${req.params.e_num}' 
 			order by emp_id`
@@ -1254,7 +1254,6 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 					
 					closeDb(db) //close
 					res.status(200).json({status:true, batch:`${results[0].pdf_batch}`})
-
 				}
 			})
 
