@@ -596,11 +596,11 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 				let xtable = '', xtotal = 0
 
 				//iterate top 10
-				
+				xtable += `<ul>`
 				for(let zkey in results){
 
-					xtotal += parseFloat(results[zkey].total)
-
+					xtotal += parseFloat(results[zkey].total.replaceAll(',',''))
+					//console.log(results[zkey].total.replaceAll(',',''))
 					xtable+= `
 					<li class="timeline-item d-flex position-relative overflow-hidden">
 					<div class="timeline-time text-dark flex-shrink-0 text-end">${results[zkey].xdate}</div>
@@ -609,7 +609,7 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 						<span class="timeline-badge-border d-block flex-shrink-0"></span>
 					</div>
 					<div class="timeline-desc fs-3 text-dark mt-n1">Claims Update <p class='border border-success  text-primary align-right'>
-						<b>P ${results[zkey].total}</b></p></div>
+						<b>..P ${results[zkey].total}</b></p></div>
 					</li>`
 				}
 
@@ -618,7 +618,7 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 						<b>P ${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></p></div>
 					</li>*/
 
-				xtable+=`</ul><input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
+				xtable+=`</ul>Oh wow<input type='text'  id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
 
 				closeDb(db);//CLOSE connection
 			
