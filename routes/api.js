@@ -552,15 +552,24 @@ const drseq = () => {
 router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 
 	if(req.params.eregion !== 'ALL'){
+
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		round(sum(a.amount)) as total,
-		b.email 
+		format(sum(a.amount),2) as total
 		from asn_claims a
-		join asn_spx_hubs b
+		join (select distinct hub, email from asn_spx_hubs ) b
 		on a.hubs_location = b.hub
-		group by a.uploaded_at,b.email,a.pdf_batch
-		having b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
-		order by a.uploaded_at DESC limit 4;`
+		where b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
+		group by a.uploaded_at
+        order by a.uploaded_at;`
+		// sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
+		// round(sum(a.amount)) as total,
+		// b.email 
+		// from asn_claims a
+		// join asn_spx_hubs b
+		// on a.hubs_location = b.hub
+		// group by a.uploaded_at,b.email,a.pdf_batch
+		// having b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
+		// order by a.uploaded_at DESC limit 4;`
 	}else{
 
 		sql = `
