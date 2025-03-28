@@ -609,7 +609,7 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 						<span class="timeline-badge-border d-block flex-shrink-0"></span>
 					</div>
 					<div class="timeline-desc fs-3 text-dark mt-n1">Claims Update <p class='border border-success  text-primary align-right'>
-						<b>..P ${results[zkey].total}</b></p></div>
+						<b>P ${results[zkey].total}</b></p></div>
 					</li>`
 				}
 
@@ -618,7 +618,7 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 						<b>P ${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></p></div>
 					</li>*/
 
-				xtable+=`</ul>Oh wow<input type='text'  id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
+				xtable+=`</ul><input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
 
 				closeDb(db);//CLOSE connection
 			
