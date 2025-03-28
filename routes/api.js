@@ -562,6 +562,15 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 		having b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
 		order by a.uploaded_at DESC limit 4;`
 	}else{
+
+		sql = `
+		select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
+		format(sum(a.amount),2) as total
+		from asn_claims a
+		group by a.uploaded_at
+		order by a.uploaded_at;
+		`
+		/*
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		round(sum(a.amount)) as total
 		from asn_claims a
@@ -570,6 +579,7 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 		group by a.uploaded_at,a.pdf_batch
 		having a.pdf_batch is null or a.pdf_batch = ""
 		order by a.uploaded_at DESC limit 4;`
+		*/
 	}
 	
 	console.log(sql)
@@ -599,9 +609,14 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 						<span class="timeline-badge-border d-block flex-shrink-0"></span>
 					</div>
 					<div class="timeline-desc fs-3 text-dark mt-n1">Claims Update <p class='border border-success  text-primary align-right'>
-						<b>P ${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></p></div>
+						<b>P ${results[zkey].total}</b></p></div>
 					</li>`
 				}
+
+				/*
+				<div class="timeline-desc fs-3 text-dark mt-n1">Claims Update <p class='border border-success  text-primary align-right'>
+						<b>P ${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></p></div>
+					</li>*/
 
 				xtable+=`</ul><input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
 
