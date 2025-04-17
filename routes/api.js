@@ -1452,6 +1452,50 @@ router.get('/getzap/:eqptid', async(req,res)=>{
 })
 
 
+//===test menu-submenu array->json--->
+router.get('/menu/:grpid', async(req,res)=>{
+	console.log('=== menu()')
+	connectDb()
+    .then((db)=>{ 
+
+		// sql2 =`SELECT 
+		// menu, 
+		// menu_icon, 
+		// JSON_ARRAYAGG( 
+		// 	JSON_OBJECT( 'sub', submenu, 
+		// 				'icon', submenu_icon,
+		// 				'href', href ) 
+		// ) AS list 
+		// FROM asn_menu 
+		// group by menu , grp_id
+		// HAVING grp_id  = ${req.params.grpid}
+		// ORDER BY sequence `
+
+		sql2 = `SELECT menu,
+			menu_icon,
+			grouplist, 
+			JSON_ARRAYAGG( 
+			JSON_OBJECT( 'sub', submenu, 'icon', submenu_icon, 'href', href )) AS list 
+			FROM asn_menu 
+			WHERE FIND_IN_SET('${req.params.grpid}', grouplist)> 0 
+			GROUP BY menu 
+			ORDER BY sequence;`
+		//console.log(sql)
+		//console.log(sql2)
+
+		db.query( sql2 ,  (error, results)=>{
+			console.log( error,results )
+			res.status(200).json( results )
+		})
+
+	}).catch((error)=>{
+        res.status(500).json({error:'Error'})
+    }) 
+
+})
+
+
+
 const bcrypt = require("bcrypt")
 const saltRounds = 10
 //======== END NODEJS CORS SETTING
