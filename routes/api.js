@@ -549,16 +549,28 @@ const drseq = () => {
 }
 
 ///===== get update total claims
-router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
+router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 
 	if(req.params.eregion !== 'ALL'){
+
+		switch( req.params.grpid){
+			case "6": //head coord
+				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
+			break
+
+			case "7": //coord
+				sqlins = ` and b.coordinator_email = '${req.params.email}' `
+			break
+
+		}//endcase
 
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		format(sum(a.amount),2) as total
 		from asn_claims a
 		join (select distinct hub, email from asn_spx_hubs ) b
 		on a.hubs_location = b.hub
-		where b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
+		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025'
+		${sqlins}
 		group by a.uploaded_at
         order by a.uploaded_at;`
 		// sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
@@ -576,6 +588,7 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 		select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		format(sum(a.amount),2) as total
 		from asn_claims a
+		where a.transaction_year = '2025'
 		group by a.uploaded_at
 		order by a.uploaded_at;
 		`
