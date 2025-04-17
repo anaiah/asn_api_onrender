@@ -574,7 +574,7 @@ router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025'
 		${sqlins}
 		group by a.uploaded_at
-        order by a.uploaded_at;`
+        order by a.uploaded_at DESC;`
 	}else{
 
 		sql = `
@@ -583,7 +583,7 @@ router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 		from asn_claims a
 		where a.transaction_year = '2025'
 		group by a.uploaded_at
-		order by a.uploaded_at;`
+		order by a.uploaded_at DESC;`
 		/*
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		round(sum(a.amount)) as total
