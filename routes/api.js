@@ -555,10 +555,12 @@ router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 
 		switch( req.params.grpid){
 			case "6": //head coord
+				sqljoin = ` head_coordiantor_email `
 				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
 			break
 
 			case "7": //coord
+				sqljoin = ` coordinator_email `
 				sqlins = ` and b.coordinator_email = '${req.params.email}' `
 			break
 
@@ -567,21 +569,12 @@ router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		format(sum(a.amount),2) as total
 		from asn_claims a
-		join (select distinct hub, email from asn_spx_hubs ) b
+		join (select distinct hub, ${sqljoin} from asn_spx_hubs ) b
 		on a.hubs_location = b.hub
 		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025'
 		${sqlins}
 		group by a.uploaded_at
         order by a.uploaded_at;`
-		// sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		// round(sum(a.amount)) as total,
-		// b.email 
-		// from asn_claims a
-		// join asn_spx_hubs b
-		// on a.hubs_location = b.hub
-		// group by a.uploaded_at,b.email,a.pdf_batch
-		// having b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
-		// order by a.uploaded_at DESC limit 4;`
 	}else{
 
 		sql = `
@@ -590,8 +583,7 @@ router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 		from asn_claims a
 		where a.transaction_year = '2025'
 		group by a.uploaded_at
-		order by a.uploaded_at;
-		`
+		order by a.uploaded_at;`
 		/*
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		round(sum(a.amount)) as total
