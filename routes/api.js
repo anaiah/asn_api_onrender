@@ -550,12 +550,12 @@ const drseq = () => {
 
 ///===== get update total claims
 router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
-
+	console.log('===FIRED CLAIMSUPDATE()====')
 	if(req.params.eregion !== 'ALL'){
 
 		switch( req.params.grpid){
 			case "6": //head coord
-				sqljoin = ` head_coordiantor_email `
+				sqljoin = ` head_coordinator_email `
 				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
 			break
 
@@ -567,77 +567,48 @@ router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 		}//endcase
 
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		format(sum(a.amount),2) as total
+		round(sum(a.amount)) as total
 		from asn_claims a
 		join (select distinct hub, ${sqljoin} from asn_spx_hubs ) b
 		on a.hubs_location = b.hub
 		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025'
 		${sqlins}
 		group by a.uploaded_at
-        order by a.uploaded_at DESC;`
+        order by a.uploaded_at DESC`
 	}else{
 
 		sql = `
 		select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		format(sum(a.amount),2) as total
+		round(sum(a.amount)) as total
 		from asn_claims a
 		where a.transaction_year = '2025'
 		group by a.uploaded_at
-		order by a.uploaded_at DESC;`
-		/*
-		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		round(sum(a.amount)) as total
-		from asn_claims a
-		join asn_spx_hubs b
-		on a.hubs_location = b.hub
-		group by a.uploaded_at,a.pdf_batch
-		having a.pdf_batch is null or a.pdf_batch = ""
-		order by a.uploaded_at DESC limit 4;`
-		*/
+		order by a.uploaded_at DESC`
+		
 	}
 	
-	console.log(sql)
+	//console.log(sql)
 	connectDb()
 	.then((db)=>{
-		db.query(`${sql}`,(error,results) => {	
-			if ( results.length == 0) {   //data = array 
+		db.query(sql,(error,results) => {	
+			//console.log(error,results)
+			if ( results[0].length == 0) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
 				res.status(500).send('** No Record Yet! ***')
 		
 			}else{ 
-				let xtable = '', xtotal = 0
-
-				//iterate top 10
-				xtable += `<ul>`
-				for(let zkey in results){
-
-					xtotal += parseFloat(results[zkey].total.replaceAll(',',''))
-					//console.log(results[zkey].total.replaceAll(',',''))
-					xtable+= `
-					<li class="timeline-item d-flex position-relative overflow-hidden">
-					<div class="timeline-time text-dark flex-shrink-0 text-end">${results[zkey].xdate}</div>
-					<div class="timeline-badge-wrap d-flex flex-column align-items-center">
-						<span class="timeline-badge border-2 border border-primary flex-shrink-0 my-8"></span>
-						<span class="timeline-badge-border d-block flex-shrink-0"></span>
-					</div>
-					<div class="timeline-desc fs-3 text-dark mt-n1">Claims Update <p class='border border-success  text-primary align-right'>
-						<b>P ${results[zkey].total}</b></p></div>
-					</li>`
-				}
-
-				/*
-				<div class="timeline-desc fs-3 text-dark mt-n1">Claims Update <p class='border border-success  text-primary align-right'>
-						<b>P ${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></p></div>
-					</li>*/
-
-				xtable+=`</ul><input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
+				
+				//xtable+=`<input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
 
 				closeDb(db);//CLOSE connection
 			
-				res.status(200).send(xtable)				
-			
+				res.status(200).json({ 
+					xdata: results,
+					gxtotal:0
+				})				
+				
 			}
 
 		})
