@@ -811,7 +811,7 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 			
 				let xtable = 
 					`<div class="col-lg-8">
-					<h2>(${req.params.eregion.toUpperCase()})</h2>
+					<h2>(${req.params.region.toUpperCase()})</h2>
 					<table class="table"> 
 					<thead>
 						<tr>
