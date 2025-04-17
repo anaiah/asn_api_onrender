@@ -643,25 +643,39 @@ router.get('/claimsupdate/:eregion/:email', async (req,res)=>{
 })
 
 //==========top 10 
-router.get('/gethub/:region/:email', async(req, res)=>{
+router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 	
 	if(req.params.region !== 'ALL'){
-		sql = `SELECT distinct(a.hubs_location) as hub, 
-			sum( a.amount ) as total ,
-			b.region as region,
-			b.email
-			from asn_claims a
-			join asn_spx_hubs b
-			on a.hubs_location = b.hub
-			group by a.hubs_location,b.region,a.pdf_batch
-			having b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
-			order by sum(a.amount) desc LIMIT 5`
+		
+		switch( req.params.grpid){
+			case "6": //head coord
+				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
+			break
+
+			case "7": //coord
+				sqlins = ` and b.coordinator_email = '${req.params.email}' `
+			break
+
+		}//endcase
+		
+		sql =`SELECT a.hubs_location as hub, 
+			round(sum( a.amount)) as total, 
+			( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
+			 from asn_claims a 
+			 join asn_spx_hubs b 
+			 on a.hubs_location = b.hub 
+			 where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025' 
+			 ${sqlins}
+			 group by a.hubs_location,b.region 
+			 order by sum(a.amount) desc limit 5`
+			 
+			 
 	}else{
-		sql = `SELECT distinct(a.hubs_location) as hub, 
+		sql = `SELECT a.hubs_location as hub, 
 		round(sum( a.amount )) as total ,
 		 (select distinct x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region
 		from asn_claims a 
-		where a.pdf_batch is null or a.pdf_batch = "" 
+		where ( a.pdf_batch is null or a.pdf_batch = "" ) and a.transaction_year='2025' 
 		group by a.hubs_location 
 		order by sum(a.amount) desc LIMIT 5;`
 	}
@@ -672,6 +686,8 @@ router.get('/gethub/:region/:email', async(req, res)=>{
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 		
+			console.log( results )
+
 			if ( results.length == 0) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
@@ -724,34 +740,47 @@ router.get('/gethub/:region/:email', async(req, res)=>{
 })
 
 //================= TOP 5 RIDER
-router.get('/getrider/:eregion/:email', async(req, res)=>{
+router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 
-	if( req.params.eregion!=='ALL'){
-		sql = `SELECT distinct( a.emp_id) as emp_id,
-		(a.full_name) as rider, 
+	if( req.params.region!=='ALL'){
+		switch( req.params.grpid){
+			case "6": //head coord
+				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
+			break
+
+			case "7": //coord
+				sqlins = ` and b.coordinator_email = '${req.params.email}' `
+			break
+
+		}//endcase
+		
+
+		sql = `SELECT a.emp_id as emp_id,
+		a.full_name as rider, 
 		a.hubs_location as hub, 
-		b.email,
-		sum( a.amount ) as total , 
-		b.region as region
+		round(sum( a.amount)) as total, 
+		(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
 		from asn_claims a 
-		join asn_spx_hubs b 
-		on a.hubs_location = b.hub 
-		group by a.emp_id, b.email,a.emp_id ,a.pdf_batch
-		having b.email = '${req.params.email}' and (a.pdf_batch is null or a.pdf_batch = "")
-		order by sum(a.amount) desc LIMIT 5;`
-	}else{
-		sql =`SELECT distinct(a.emp_id) as emp_id,
-		(a.full_name) as rider,
-		round(sum( a.amount )) as total,
-        a.hubs_location as hub,
-        (select distinct x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region
-		from asn_claims a 
-        where  a.pdf_batch is null
-		group by a.emp_id,a.pdf_batch
-		order by sum(a.amount) desc, a.full_name LIMIT 5;`
-	}
+		join asn_spx_hubs b on a.hubs_location = b.hub 
+		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025' 
+		${sqlins} 
+		group by a.emp_id,a.full_name 
+		order by sum(a.amount) desc limit 5;
 
-	
+`
+	}else{
+		sql =`SELECT 
+		a.emp_id as emp_id,
+		a.full_name as rider,
+		a.hubs_location as hub, 
+		round(sum( a.amount)) as total, 
+		( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
+		from asn_claims a 
+		join asn_spx_hubs b on a.hubs_location = b.hub 
+		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025' 
+		group by a.emp_id,a.full_name
+		order by sum(a.amount) desc limit 5;`
+	}
 	
 	console.log('Top 5 Rider processing...')
 	
