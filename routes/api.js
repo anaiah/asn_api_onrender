@@ -624,9 +624,9 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 
 
 ///===== get update grid total claims
-router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
+router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 	console.log('===FIRED CLAIMSUPDATE()====')
-	if(req.params.eregion !== 'ALL'){
+	if(req.params.region !== 'ALL'){
 
 		switch( req.params.grpid){
 			case "6": //head coord
@@ -679,10 +679,7 @@ router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 
 				closeDb(db);//CLOSE connection
 			
-				res.status(200).json({ 
-					xdata: results,
-					gxtotal:0
-				})				
+				res.status(200).json(results)				
 				
 			}
 
