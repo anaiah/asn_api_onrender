@@ -548,7 +548,83 @@ const drseq = () => {
 	return today
 }
 
-///===== get update total claims
+////= get printed atds
+router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
+
+		if( req.params.region!=='ALL'){
+			switch( req.params.grpid){
+				case "6": //head coord
+					sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
+				break
+
+				case "7": //coord
+					sqlins = ` and b.coordinator_email = '${req.params.email}' `
+				break
+
+			}//endcase
+			
+
+			sql = `SELECT a.emp_id as emp_id,
+			a.full_name as rider, 
+			a.hubs_location as hub, 
+			round(sum( a.amount)) as total, 
+			(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
+			from asn_claims a 
+			join asn_spx_hubs b on a.hubs_location = b.hub 
+			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
+			${sqlins} 
+			group by a.emp_id,a.full_name 
+			order by sum(a.amount) desc limit 5;
+
+		`
+		}else{
+			sql =`SELECT 
+			a.emp_id as emp_id,
+			a.full_name as rider,
+			a.hubs_location as hub, 
+			round(sum( a.amount)) as total, 
+			( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
+			from asn_claims a 
+			join asn_spx_hubs b on a.hubs_location = b.hub 
+			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
+			group by a.emp_id,a.full_name
+			order by sum(a.amount) desc limit 5;`
+		}
+
+		//console.log(sql)
+		connectDb()
+		.then((db)=>{
+			db.query(sql,(error,results) => {	
+				//console.log(error,results)
+				if ( results[0].length == 0) {   //data = array 
+					console.log('no rec')
+					closeDb(db);//CLOSE connection
+			
+					res.status(500).send('** No Record Yet! ***')
+			
+				}else{ 
+					
+					//xtable+=`<input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
+
+					closeDb(db);//CLOSE connection
+				
+					res.status(200).json({ 
+						xdata: results
+					})				
+					
+				}
+
+			})
+		}).catch((error)=>{
+			res.status(500).json({error:'Error'})
+		}) 
+
+
+})		
+//=================== END GET PRINTED ATDS ===============//
+
+
+///===== get update grid total claims
 router.get('/claimsupdate/:eregion/:grpid/:email', async (req,res)=>{
 	console.log('===FIRED CLAIMSUPDATE()====')
 	if(req.params.eregion !== 'ALL'){
