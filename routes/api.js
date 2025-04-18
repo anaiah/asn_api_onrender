@@ -998,6 +998,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		from asn_claims a 
 		join asn_spx_hubs b on a.hubs_location = b.hub 
 		where ${sqlzins} 
+		and (a.pdf_batch is null or a.pdf_batch = "") 
 		and a.transaction_year='2025' 
 		${sqlins} 
 		group by a.emp_id,a.full_name 
@@ -1016,9 +1017,12 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		from asn_claims a 
 		join asn_spx_hubs b on a.hubs_location = b.hub 
 		where ${sqlzins} 
+		and (a.pdf_batch is null or a.pdf_batch = "") 
 		and a.transaction_year='2025' 
 		group by a.emp_id,a.full_name
-		order by sum(a.amount) desc limit 5;`
+		order by sum(a.amount) desc limit 10;`
+
+		
 	}
 
 
