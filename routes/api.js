@@ -665,9 +665,9 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 	//console.log(sql)
 	connectDb()
 	.then((db)=>{
-		db.query(sql,(error,results) => {	
+		db.query(sql,(error,result) => {	
 			//console.log(error,results)
-			if ( results[0].length == 0) {   //data = array 
+			if ( result[0].length == 0) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
@@ -679,7 +679,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 
 				closeDb(db);//CLOSE connection
 			
-				res.status(200).json(results)				
+				res.status(200).json(result)				
 				
 			}
 
