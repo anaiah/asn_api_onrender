@@ -611,7 +611,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 					closeDb(db);//CLOSE connection
 				
 					res.status(200).json({ 
-						xdata: results
+						zdata: results
 					})				
 					
 				}
