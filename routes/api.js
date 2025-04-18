@@ -1093,6 +1093,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 				<tr>
 				<td colspan=2>
 				<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="javascript:asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
 				</td>
 				</tr>
 				</tbody>
