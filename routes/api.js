@@ -568,7 +568,8 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			a.full_name as rider, 
 			a.hubs_location as hub, 
 			round(sum( a.amount)) as total, 
-			(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
+			(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
+			a.pdf_batch
 			from asn_claims a 
 			join asn_spx_hubs b on a.hubs_location = b.hub 
 			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
@@ -583,7 +584,8 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			a.full_name as rider,
 			a.hubs_location as hub, 
 			round(sum( a.amount)) as total, 
-			( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
+			( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
+			a.pdf_batch
 			from asn_claims a 
 			join asn_spx_hubs b on a.hubs_location = b.hub 
 			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
