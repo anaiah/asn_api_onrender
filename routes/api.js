@@ -961,74 +961,76 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 })
 
 //search by id or name
-router.get('/getrecord/:enum/:ename/:region/:email', async(req, res)=>{
-	let sql, sqlz = ""
+router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 
-	if(req.params.region=="2"){
-		sqlz = `, (select distinct x.email from asn_spx_hubs x where x.email = '${req.params.email}' limit 1) as email`
-	}else{
-
-	}
-
+	
 	if ( req.params.ename!=="blank" &&  req.params.enum!== "blank"){
-		sql = 
-		`SELECT distinct(a.full_name) as rider, 
+		sqlzins = ` ( a.emp_id like '%${req.params.enum}%' or upper(a.full_name) like '%${req.params.ename.toUpperCase()}%')`
+		
+ 	}else if( req.params.enum!== "blank"  &&  req.params.ename == "blank"){
+		sqlzins = ` a.emp_id = '${req.params.enum}' `
+		
+	}else if ( req.params.ename!=="blank"  &&  req.params.enum == "blank"){
+		sqlzins = ` upper(a.full_name) like '%${req.params.ename.toUpperCase()}%' `
+
+	}//eif
+
+	if( req.params.region!=='ALL'){
+		switch( req.params.grpid){
+			case "6": //head coord
+				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
+			break
+
+			case "7": //coord
+				sqlins = ` and b.coordinator_email = '${req.params.email}' `
+			break
+
+		}//endcase
+		
+
+		sql = `SELECT a.emp_id as emp_id,
+		a.full_name as rider, 
 		a.hubs_location as hub, 
-		b.email, 
-		a.emp_id,
-		sum( a.amount ) as total , 
-		a.category,
-		b.region as region ,
+		round(sum( a.amount)) as total, 
+		(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
 		a.pdf_batch,
 		a.batch_file
 		from asn_claims a 
-		join asn_spx_hubs b 
-		on a.hubs_location = b.hub 
-		group by a.full_name, a.email, a.emp_id  
-		having ( a.emp_id like '%${req.params.enum}%' or upper(a.full_name) like '%${req.params.ename.toUpperCase()}%')
-		${sqlz}
-		order by a.full_name desc LIMIT 10;`	
-	
- 	}else if( req.params.enum!== "blank"  &&  req.params.ename == "blank"){
+		join asn_spx_hubs b on a.hubs_location = b.hub 
+		where ${sqlzins} 
+		and a.transaction_year='2025' 
+		${sqlins} 
+		group by a.emp_id,a.full_name 
+		order by sum(a.amount) desc limit 10;
 
-		sql = 
-		`SELECT distinct(a.emp_id) as emp_id,
-		(a.full_name) as rider,
-		round(sum( a.amount )) as total,
-        a.hubs_location as hub,
-		a.batch_file,
+	`
+	}else{
+		sql =`SELECT 
+		a.emp_id as emp_id,
+		a.full_name as rider,
+		a.hubs_location as hub, 
+		round(sum( a.amount)) as total, 
+		( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
 		a.pdf_batch,
-        (select distinct x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region
-		${sqlz}
+		a.batch_file
 		from asn_claims a 
-        where  a.emp_id = '${req.params.enum}' 
-		group by a.emp_id,a.pdf_batch
-		order by sum(a.amount) desc, a.full_name;`	
-		
-		
-	}else if ( req.params.ename!=="blank"  &&  req.params.enum == "blank"){
-		sql = `SELECT distinct(a.emp_id) as emp_id,
-		(a.full_name) as rider,
-		round(sum( a.amount )) as total,
-        a.hubs_location as hub,
-		a.batch_file,
-		a.pdf_batch,
-        (select distinct x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region
-		${sqlz}
-		from asn_claims a 
-        where  upper(a.full_name) like '%${req.params.ename.toUpperCase()}%' 
-		group by a.emp_id,a.pdf_batch
-		order by sum(a.amount) desc, a.full_name LIMIT 1;`	
-	}//eif
+		join asn_spx_hubs b on a.hubs_location = b.hub 
+		where ${sqlzins} 
+		and a.transaction_year='2025' 
+		group by a.emp_id,a.full_name
+		order by sum(a.amount) desc limit 5;`
+	}
+
 
 	console.log( 'Search Claims processing...')
-	console.log(sql)
 	
 	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
-		     console.log( results)
-			if ( ! results ) {   //data = array 
+		     
+			console.log( results)
+
+			if ( results[0].length == 0 ) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
@@ -1077,7 +1079,7 @@ router.get('/getrecord/:enum/:ename/:region/:email', async(req, res)=>{
 				}//endfor
 				let visible
 
-				if(results.rowCount>1){
+				if(results[0].length > 0){
 					visible = "disabled"	
 				}else{
 					visible = ""
@@ -1572,7 +1574,6 @@ router.get('/menu/:grpid', async(req,res)=>{
 })
 
 
-
 const bcrypt = require("bcrypt")
 const saltRounds = 10
 //======== END NODEJS CORS SETTING
@@ -1673,7 +1674,6 @@ router.get( '/getotp/:otp/:email', async (req,res)=>{
 
 })
 
- 
 const smsPost = (msgbody) => {
 	//number : '09175761186,09985524618,09611164983',
 	console.log('***SENDING SMS*** ', msgbody)
