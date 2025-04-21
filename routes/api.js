@@ -656,7 +656,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 		select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		round(sum(a.amount)) as total
 		from asn_claims a
-		where (a.pdf_batch is nu ll or a.pdf_batch = "")
+		where (a.pdf_batch is null or a.pdf_batch = "")
 		and a.transaction_year = '2025'
 		group by a.uploaded_at
 		order by a.uploaded_at DESC`
