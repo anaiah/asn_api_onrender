@@ -1386,8 +1386,9 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 			.then((db)=>{
 				db.query(`${sql}`, (error,results) => {	
 
-					console.log( '===checkpdf()===', sql,  results)
-					if(results[0].length > 0){
+					//console.log( '===checkpdf()===', sql,  results)
+					
+					if(results.length > 0){
 						console.log('FOUND!')
 						
 						closeDb(db) //close
