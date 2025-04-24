@@ -1291,7 +1291,9 @@ const pdfBatch =   ( emp_id ) =>{
 			db.query(`${sql}`,(error,results) => {
 
 				console.log('prev seq ', results)
-				if(results[0].length>0){
+
+
+				if(results.length > 0){
 					
 					seq = results[0].sequence+1
 					//console.log( seq.toString().padStart(5,"0") )
@@ -1308,9 +1310,9 @@ const pdfBatch =   ( emp_id ) =>{
 
 					//console.log(xcode)
 					resolve( xcode )
-				}
-					
-				reject(error)
+				}else{
+					reject(error)
+				}//eif
 				
 			})
 		}).catch((error)=>{
