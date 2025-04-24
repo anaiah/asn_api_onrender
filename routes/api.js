@@ -979,11 +979,11 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 	if( req.params.region!=='ALL'){
 		switch( req.params.grpid){
 			case "6": //head coord
-				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
+				sqlins = ` and a.head_coordinator_email = '${req.params.email}' `
 			break
 
 			case "7": //coord
-				sqlins = ` and b.coordinator_email = '${req.params.email}' `
+				sqlins = ` and a.coordinator_email = '${req.params.email}' `
 			break
 
 		}//endcase
@@ -999,7 +999,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		FROM asn_spx_hubs a 
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
-		and a.transaction_year='2025' 
+		and b.transaction_year='2025' 
 		${sqlins} 
 		GROUP BY b.emp_id,b.full_name, a.region 
 		ORDER BY sum(b.amount) DESC;`
@@ -1015,7 +1015,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		FROM asn_spx_hubs a 
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
-		and a.transaction_year='2025'
+		and b.transaction_year='2025'
 		GROUP BY b.emp_id,b.full_name, a.region 
 		ORDER BY sum(b.amount) DESC;`
 		
