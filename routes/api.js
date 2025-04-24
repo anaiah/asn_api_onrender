@@ -1290,7 +1290,7 @@ const pdfBatch =   ( emp_id ) =>{
 		.then((db)=>{
 			db.query(`${sql}`,(error,results) => {
 
-				console.log('prev seq ', results)
+				//console.log('prev seq ', results)
 
 
 				if(results.length > 0){
@@ -1304,7 +1304,7 @@ const pdfBatch =   ( emp_id ) =>{
 	
 					xcode =`ASN-${seq.toString().padStart(5,"0")}`
 					
-					console.log('==inside pdfBatch()===',seq, xcode )
+					//onsole.log('==inside pdfBatch()===',seq, xcode )
 					
 					closeDb(db)
 
@@ -1406,10 +1406,10 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 							and transaction_year='2025' 
 							and ( pdf_batch is null or pdf_batch = '' )`
 				
-							console.log('inside Promise of pdfBatch()' , sql2)	
+							//console.log('inside Promise of pdfBatch()' , sql2)	
 
 							db.query(sql2, null, (error,xdata) => {
-								console.log('UPDATE PDF BATCH==', xdata )
+								//console.log('UPDATE PDF BATCH==', xdata )
 								///console.log(xdata) xdata.affectedRows or changedRows
 							})
 
