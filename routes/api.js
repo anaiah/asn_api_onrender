@@ -109,12 +109,12 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 
 			for( const record of data){
 				//onst { batch_id,emp_id,full_name, track_number, claims_reason, hubs_location, amt } = record;
-				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_date } = record ;
-				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amount, transaction_date) 
+				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_year } = record ;
+				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amount, transaction_year) 
 							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 				
-				insertPromises.push( await conn.execute( query , [batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_date]))
-				console.log(query,batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_date)
+				insertPromises.push( await conn.execute( query , [batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_year]))
+				console.log(query,batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_year)
 			}
 			await Promise.all(insertPromises)
 			await conn.end()
