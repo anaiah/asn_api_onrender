@@ -989,40 +989,35 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		}//endcase
 		
 
-		sql = `SELECT a.emp_id as emp_id,
-		a.full_name as rider, 
-		a.hubs_location as hub, 
-		round(sum( a.amount)) as total, 
-		(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
-		a.pdf_batch,
-		a.batch_file
-		from asn_claims a 
-		join asn_spx_hubs b on a.hubs_location = b.hub 
-		where ${sqlzins} 
-		and (a.pdf_batch is null or a.pdf_batch = "") 
+		sql=`SELECT b.full_name as rider, 
+		b.emp_id, 
+		b.hubs_location as hub, 
+		a.region, 
+		format(SUM(b.amount),2) as total, 
+		b.pdf_batch, 
+		b.batch_file 
+		FROM asn_spx_hubs a 
+		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
+		WHERE ${sqlzins} 
 		and a.transaction_year='2025' 
 		${sqlins} 
-		group by a.emp_id,a.full_name 
-		order by sum(a.amount) desc limit 10;
+		GROUP BY b.emp_id,b.full_name, a.region 
+		ORDER BY sum(b.amount) DESC;`
 
-	`
 	}else{
-		sql =`SELECT 
-		a.emp_id as emp_id,
-		a.full_name as rider,
-		a.hubs_location as hub, 
-		round(sum( a.amount)) as total, 
-		( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
-		a.pdf_batch,
-		a.batch_file
-		from asn_claims a 
-		join asn_spx_hubs b on a.hubs_location = b.hub 
-		where ${sqlzins} 
-		and (a.pdf_batch is null or a.pdf_batch = "") 
-		and a.transaction_year='2025' 
-		group by a.emp_id,a.full_name
-		order by sum(a.amount) desc limit 10;`
-
+		sql=`SELECT b.full_name as rider, 
+		b.emp_id, 
+		b.hubs_location as hub, 
+		a.region, 
+		format(SUM(b.amount),2) as total, 
+		b.pdf_batch, 
+		b.batch_file 
+		FROM asn_spx_hubs a 
+		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
+		WHERE ${sqlzins} 
+		and a.transaction_year='2025'
+		GROUP BY b.emp_id,b.full_name, a.region 
+		ORDER BY sum(b.amount) DESC;`
 		
 	}
 
