@@ -593,7 +593,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			order by sum(a.amount) desc limit 5;`
 		}
 
-		//console.log(sql)
+		console.log('==getprintpdf== ', sql)
 		connectDb()
 		.then((db)=>{
 			db.query(sql,(error,results) => {	
