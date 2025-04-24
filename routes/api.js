@@ -1027,7 +1027,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 	}
 
 
-	console.log( 'Search Claims processing...')
+	console.log( 'Search Claims processing...',sql)
 	
 	connectDb()
 	.then((db)=>{
