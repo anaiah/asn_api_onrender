@@ -1294,7 +1294,7 @@ const pdfBatch =  ( emp_id ) =>{
 		connectDb()
 		.then((db)=>{
 			db.query(`${sql}`,(error,results) => {
-				if(results.length>0){
+				if(results[0].length>0){
 					
 					seq = results[0].sequence+1
 					//console.log(results,seq)
@@ -1355,13 +1355,14 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 		case "4":
 		case "5":
 			sql = `Select emp_id,pdf_batch from asn_claims
-			where emp_id='${req.params.e_num}' 
+			where emp_id='${req.params.e_num}'
+			and transaction_year = '2025'
 			order by emp_id`
 
 			connectDb()
 			.then((db)=>{
 				db.query(`${sql}`,async(error,results) => {	
-					if(results.length > 0){
+					if(results[0].length > 0){
 						console.log('OK TO REPRINT')
 						
 						closeDb(db) //close
@@ -1377,14 +1378,15 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 		default:
 			sql = `Select emp_id,pdf_batch from asn_claims
-			where emp_id='${req.params.e_num}' and
-			pdf_batch <> ''
+			where emp_id='${req.params.e_num}' 
+			and ( pdf_batch <> '' or pdf_batch is null )
+			and transaction_year = '2025'
 			order by emp_id`
 
 			connectDb()
 			.then((db)=>{
 				db.query(`${sql}`,async(error,results) => {	
-					if(results.length > 0){
+					if(results[0].length > 0){
 						console.log('FOUND!')
 						
 						closeDb(db) //close
@@ -1394,7 +1396,9 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 						const seq = await pdfBatch( req.params.e_num)
 
 						const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
-									where emp_id='${req.params.e_num}'`
+									where emp_id='${req.params.e_num}' 
+									and transaction_year='2025' 
+									and ( pdf_batch is null or pdf_batch <> '' )`
 						
 						console.log(sql2)	
 
