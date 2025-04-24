@@ -1028,7 +1028,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 		     
-			console.log( results)
+			//console.log( results)
 
 			if ( results[0].length == 0 ) {   //data = array 
 				console.log('no rec')
@@ -1038,19 +1038,19 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		
 			}else{ 
 			
-				let pdfbatch
+				let xpdfbatch
 
-				console.log(results)
+				//console.log(results)
 
 				
 				if( results[0].pdf_batch!==null ){
-					pdfbatch = "ATD # " + results[0].pdf_batch
+					xpdfbatch = "ATD # " + results[0].pdf_batch
 				}else{
-					pdfbatch = "ATD PDF NOT YET PROCESSED"
+					xpdfbatch = "ATD PDF NOT YET PROCESSED"
 				}
 				let xtable = 
 				`<div class="col-lg-8">
-					<div class='ms-2'><H2 style="color:#dc4e41">${pdfbatch}</H2></div>
+					<div class='ms-2'><H2 style="color:#dc4e41">${xpdfbatch}</H2></div>
 				<table class="table w-100	" > 
 				<thead>
 					<tr>
@@ -1281,7 +1281,7 @@ router.get('/getlistpdf/:limit/:page', async(req,res) => {
 })//end pagination
 
 
-const pdfBatch =  ( emp_id ) =>{
+const pdfBatch =  async ( emp_id ) =>{
 	return new Promise((resolve, reject)=> {
 		const sql = `Select sequence from asn_pdf_sequence;`
 		let xcode, seq
@@ -1388,6 +1388,8 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 						res.status(200).json({status:false, batch: results[0].pdf_batch})
 					}else{
+
+						//==================SEQUENCE==================//
 						const seq = await pdfBatch( req.params.e_num)
 
 						const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
@@ -1398,6 +1400,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 						console.log(sql2)	
 
 						db.query(sql2, null, (error,xdata) => {
+							console.log('UPDATE PDF BATCH==', xdata )
 							///console.log(xdata) xdata.affectedRows or changedRows
 						})
 
