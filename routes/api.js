@@ -1349,69 +1349,73 @@ router.get('/pdfx', async(req,res)=>{
 router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 	//console.log(req.params.grp_id)
-
-	if( req.params.grp_id!=="2"){ //if the one checking is not ARE COORDINATOR allow to re-print/download pdf
-		const sql = `Select emp_id,pdf_batch from asn_claims
+	switch ( req.params.grp_id ){
+		case "2":
+		case "3":
+		case "4":
+		case "5":
+			sql = `Select emp_id,pdf_batch from asn_claims
 			where emp_id='${req.params.e_num}' 
 			order by emp_id`
 
-		connectDb()
-		.then((db)=>{
-			db.query(`${sql}`,async(error,results) => {	
-				if(results.length > 0){
-					console.log('OK TO REPRINT')
-					
-					closeDb(db) //close
-					res.status(200).json({status:true, batch:`${results[0].pdf_batch}`})
-				}
-			})
+			connectDb()
+			.then((db)=>{
+				db.query(`${sql}`,async(error,results) => {	
+					if(results.length > 0){
+						console.log('OK TO REPRINT')
+						
+						closeDb(db) //close
+						res.status(200).json({status:true, batch:`${results[0].pdf_batch}`})
+					}
+				})
 
-		}).catch((error)=>{
-			res.status(500).json({error:'Error'})
-		}) 
+			}).catch((error)=>{
+				res.status(500).json({error:'Error'})
+			}) 
 
-	}else{
+		break;
 
-		const sql = `Select emp_id,pdf_batch from asn_claims
+		default:
+			sql = `Select emp_id,pdf_batch from asn_claims
 			where emp_id='${req.params.e_num}' and
 			pdf_batch <> ''
 			order by emp_id`
 
-		connectDb()
-		.then((db)=>{
-			db.query(`${sql}`,async(error,results) => {	
-				if(results.length > 0){
-					console.log('FOUND!')
-					
-					closeDb(db) //close
+			connectDb()
+			.then((db)=>{
+				db.query(`${sql}`,async(error,results) => {	
+					if(results.length > 0){
+						console.log('FOUND!')
+						
+						closeDb(db) //close
 
-					res.status(200).json({status:false, batch: results[0].pdf_batch})
-				}else{
-					const seq = await pdfBatch( req.params.e_num)
+						res.status(200).json({status:false, batch: results[0].pdf_batch})
+					}else{
+						const seq = await pdfBatch( req.params.e_num)
 
-					const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
-								where emp_id='${req.params.e_num}'`
-					
-					console.log(sql2)	
+						const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
+									where emp_id='${req.params.e_num}'`
+						
+						console.log(sql2)	
 
-					db.query(sql2, null, (error,xdata) => {
-						///console.log(xdata) xdata.affectedRows or changedRows
-					})
+						db.query(sql2, null, (error,xdata) => {
+							///console.log(xdata) xdata.affectedRows or changedRows
+						})
 
-					console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
-					
-					closeDb(db)
-					res.status(200).json({status:true, batch:`${seq}`})
-					
-				}
+						console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
+						
+						closeDb(db)
+						res.status(200).json({status:true, batch:`${seq}`})
+						
+					}
+				})
+
+			}).catch((error)=>{
+				res.status(500).json({error:'Error'})
 			})
+		break;
 
-		}).catch((error)=>{
-			res.status(500).json({error:'Error'})
-		}) 
-
-	}//eif
-	
+	}//end switch
 	
 
 })
