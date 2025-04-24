@@ -1434,7 +1434,9 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 	hubs_location as hub, 
 	track_number as track,
 	claims_reason as reason,
-	sum( amount ) as total from asn_claims
+	sum( amount ) as total,
+	pdf_batch
+	from asn_claims
 	group by full_name,emp_id,category,hubs_location, track_number,claims_reason
 	having emp_id='${req.params.e_num}' and (pdf_batch is null or pdf_batch = '')
 	order by full_name`
@@ -1445,7 +1447,7 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 		console.log( results )
-		
+
 			if ( results[0].length == 0) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
