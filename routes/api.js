@@ -1292,7 +1292,6 @@ const pdfBatch =   ( emp_id ) =>{
 				if(results[0].length>0){
 					
 					seq = results[0].sequence+1
-					//console.log(results,seq)
 					//console.log( seq.toString().padStart(5,"0") )
 					const usql = `update asn_pdf_sequence set sequence = ${seq}`
 					
@@ -1300,13 +1299,16 @@ const pdfBatch =   ( emp_id ) =>{
 					})
 	
 					xcode =`ASN-${seq.toString().padStart(5,"0")}`
-
 					
+					console.log('==inside pdfBatch()===',seq, xcode )
+					
+					closeDb(db)
+
+					//console.log(xcode)
+					resolve( xcode )
 				}
-	
-				closeDb(db)
-				//console.log(xcode)
-				resolve( xcode )
+					
+				reject(error)
 				
 			})
 		}).catch((error)=>{
