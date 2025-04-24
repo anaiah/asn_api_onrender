@@ -1022,7 +1022,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 	}
 
 
-	console.log( 'Search Claims processing...',sql)
+	console.log( 'getrecord()===== Search Claims processing...')
 	
 	connectDb()
 	.then((db)=>{
@@ -1281,7 +1281,7 @@ router.get('/getlistpdf/:limit/:page', async(req,res) => {
 })//end pagination
 
 
-const pdfBatch =  async ( emp_id ) =>{
+const pdfBatch =   ( emp_id ) =>{
 	return new Promise((resolve, reject)=> {
 		const sql = `Select sequence from asn_pdf_sequence;`
 		let xcode, seq
@@ -1390,24 +1390,26 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 					}else{
 
 						//==================SEQUENCE==================//
-						const seq = await pdfBatch( req.params.e_num)
+						pdfBatch( req.params.e_num)
+						.then( seq => {
+							const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
+							where emp_id='${req.params.e_num}' 
+							and transaction_year='2025' 
+							and ( pdf_batch is null or pdf_batch = '' )`
+				
+							console.log('inside Promise of pdfBatch()' , sql2)	
 
-						const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
-									where emp_id='${req.params.e_num}' 
-									and transaction_year='2025' 
-									and ( pdf_batch is null or pdf_batch = '' )`
-						
-						console.log(sql2)	
+							db.query(sql2, null, (error,xdata) => {
+								console.log('UPDATE PDF BATCH==', xdata )
+								///console.log(xdata) xdata.affectedRows or changedRows
+							})
 
-						db.query(sql2, null, (error,xdata) => {
-							console.log('UPDATE PDF BATCH==', xdata )
-							///console.log(xdata) xdata.affectedRows or changedRows
+							console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
+							
+							closeDb(db)
+							res.status(200).json({status:true, batch:`${seq}`})
+				
 						})
-
-						console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
-						
-						closeDb(db)
-						res.status(200).json({status:true, batch:`${seq}`})
 						
 					}
 				})
