@@ -1289,6 +1289,8 @@ const pdfBatch =   ( emp_id ) =>{
 		connectDb()
 		.then((db)=>{
 			db.query(`${sql}`,(error,results) => {
+
+				console.log('prev seq ', results)
 				if(results[0].length>0){
 					
 					seq = results[0].sequence+1
@@ -1411,6 +1413,8 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 							closeDb(db)
 							res.status(200).json({status:true, batch:`${seq}`})
 				
+						}).catch((error)=>{
+							res.status(500).json({error:'Error'})
 						})
 						
 					}
