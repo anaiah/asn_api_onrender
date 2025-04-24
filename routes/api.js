@@ -966,13 +966,13 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 
 	
 	if ( req.params.ename!=="blank" &&  req.params.enum!== "blank"){
-		sqlzins = ` ( a.emp_id like '%${req.params.enum}%' or upper(a.full_name) like '%${req.params.ename.toUpperCase()}%')`
+		sqlzins = ` ( b.emp_id like '%${req.params.enum}%' or upper(b.full_name) like '%${req.params.ename.toUpperCase()}%')`
 		
  	}else if( req.params.enum!== "blank"  &&  req.params.ename == "blank"){
-		sqlzins = ` a.emp_id = '${req.params.enum}' `
+		sqlzins = ` b.emp_id = '${req.params.enum}' `
 		
 	}else if ( req.params.ename!=="blank"  &&  req.params.enum == "blank"){
-		sqlzins = ` upper(a.full_name) like '%${req.params.ename.toUpperCase()}%' `
+		sqlzins = ` upper(b.full_name) like '%${req.params.ename.toUpperCase()}%' `
 
 	}//eif
 
