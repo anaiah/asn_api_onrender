@@ -1379,7 +1379,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 		default:
 			sql = `Select emp_id,pdf_batch from asn_claims
 			where emp_id='${req.params.e_num}' 
-			and ( pdf_batch <> '' or pdf_batch is null )
+			and ( pdf_batch = '' or pdf_batch is null )
 			and transaction_year = '2025'
 			order by emp_id`
 
@@ -1398,7 +1398,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 						const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
 									where emp_id='${req.params.e_num}' 
 									and transaction_year='2025' 
-									and ( pdf_batch is null or pdf_batch <> '' )`
+									and ( pdf_batch is null or pdf_batch = '' )`
 						
 						console.log(sql2)	
 
@@ -1428,7 +1428,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 
 	console.log('===createpdf()====', req.params.e_num)
-	const sql = `SELECT distinct(emp_id) as emp_id,
+	const sql = `SELECT emp_id,
 	full_name as rider,
 	category,
 	hubs_location as hub, 
@@ -1436,10 +1436,10 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 	claims_reason as reason,
 	sum( amount ) as total from asn_claims
 	group by full_name,emp_id,category,hubs_location, track_number,claims_reason
-	having emp_id='${req.params.e_num}'
+	having emp_id='${req.params.e_num}' and (pdf_batch is null or pdf_batch = '')
 	order by full_name`
 
-	//console.log(sql )
+	console.log('==== createpdf() ==== ', sql )
 
 	connectDb()
 	.then((db)=>{
