@@ -574,7 +574,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			join asn_spx_hubs b on a.hubs_location = b.hub 
 			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
 			${sqlins} 
-			group by a.emp_id,a.full_name 
+			group by a.pdf_batch
 			order by sum(a.amount) desc limit 5;
 
 		`
@@ -589,7 +589,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			from asn_claims a 
 			join asn_spx_hubs b on a.hubs_location = b.hub 
 			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
-			group by a.emp_id,a.full_name
+			group by a.pdf_batch
 			order by sum(a.amount) desc limit 5;`
 		}
 
@@ -598,11 +598,11 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 		.then((db)=>{
 			db.query(sql,(error,results) => {	
 				//console.log(error,results)
-				if ( results[0].length == 0) {   //data = array 
+				if ( results.length == 0) {   //data = array 
 					console.log('no rec')
 					closeDb(db);//CLOSE connection
 			
-					res.status(500).send('** No Record Yet! ***')
+					res.status(500).send({error:'NO RECORD'})
 			
 				}else{ 
 					
@@ -610,6 +610,10 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 
 					closeDb(db);//CLOSE connection
 				
+					results.sort((a, b) => {
+						return a.pdf_batch - b.pdf_batch;
+					});
+	
 					res.status(200).json(results)
 				}
 
@@ -1033,7 +1037,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		     
 			//console.log( results)
 
-			if ( results[0].length == 0 ) {   //data = array 
+			if ( results.length == 0 ) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
