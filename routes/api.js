@@ -1354,19 +1354,27 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 	//console.log(req.params.grp_id)
 	switch ( req.params.grp_id ){
+
+		//these group are designed just to REPRINT  the PDF
+		//and not to ask for a new one
 		case "2": //jenelle
 		case "3": //april
-		case "4":
-		case "5":
+		case "4": //admin / head admin
+		case "5": //admin / head admin
+
 			sql = `Select emp_id,pdf_batch from asn_claims
 			where emp_id='${req.params.e_num}'
+			and ( pdf_batch <> "" or pdf_batch is not null )
 			and transaction_year = '2025'
 			order by emp_id`
 
-			console.log('checkpdf() ',sql)
 			connectDb()
 			.then((db)=>{
 				db.query(`${sql}`,(error,results) => {	
+					
+					console.log('checkpdf() ',sql, 'result ', results )
+		
+					
 					if(results.length > 0){
 						console.log('OK TO REPRINT')
 						
@@ -1382,9 +1390,12 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 		break;
 
 		default:
+
+			//for the headd coord/ coord to download 
+			// a blank atd pdf
 			sql = `Select emp_id,pdf_batch from asn_claims
 			where emp_id='${req.params.e_num}' 
-			and ( pdf_batch <> "" or pdf_batch is not null )
+			and ( pdf_batch = "" or pdf_batch is null ) 
 			and transaction_year = '2025'
 			order by emp_id`
 
