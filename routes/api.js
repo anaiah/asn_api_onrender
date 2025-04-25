@@ -1428,7 +1428,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 								///console.log(xdata) xdata.affectedRows or changedRows
 							})
 
-							console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD!')
+							console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD! BATCH->',seq)
 							
 							closeDb(db)
 							res.status(200).json({status:true, batch:`${seq}`})
@@ -1464,10 +1464,10 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 	pdf_batch
 	from asn_claims
 	group by full_name,emp_id,category,hubs_location, track_number,claims_reason
-	having emp_id='${req.params.e_num}' and (pdf_batch is null or pdf_batch = '')
+	having emp_id='${req.params.e_num}' and pdf_batch ='${req.params.batch}'
 	order by full_name`
 
-	console.log('==== createpdf() ==== ', sql )
+	console.log('==== createpdf() ==== ')
 
 	connectDb()
 	.then((db)=>{
@@ -1478,7 +1478,7 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
-				res.status(500).send('** No Record Yet! ***')
+				res.status(500).send({error:'error'})
 		
 			}else{ 
 			
@@ -1515,7 +1515,7 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 						}else{
 
 							closeDb(db)
-							
+							console.log(req.params.batch , ' SUCCESS DOWNLOADED BY CLIENT')
 						}
 					}) //===end res.download
 				})
