@@ -693,6 +693,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 
 //==========top 10 
 router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
+	let sqlins
 	
 	if(req.params.region !== 'ALL'){
 		

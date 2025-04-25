@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
 })//end io conn
 //====== server listen to por
 
-const port = process.env.PORT||10000
+const port = process.env.PORT||10020
 
 server_https.listen( port ,()=>{
     console.log(`ASIANOW ENTERPRISE INC. API -- listening to port ${port}`)
