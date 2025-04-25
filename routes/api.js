@@ -963,7 +963,7 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 
 //search by id or name
 router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
-
+	let sqlzins, sqlins
 	
 	if ( req.params.ename!=="blank" &&  req.params.enum!== "blank"){
 		sqlzins = ` ( b.emp_id like '%${req.params.enum}%' or upper(b.full_name) like '%${req.params.ename.toUpperCase()}%')`
@@ -975,6 +975,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		sqlzins = ` upper(b.full_name) like '%${req.params.ename.toUpperCase()}%' `
 
 	}//eif
+
+
 
 	if( req.params.region!=='ALL'){
 		switch( req.params.grpid){
