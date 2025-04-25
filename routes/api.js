@@ -1474,7 +1474,7 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 		db.query(`${sql}`,(error,results) => {	
 		console.log( results )
 
-			if ( results[0].length == 0) {   //data = array 
+			if ( results.length == 0) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
