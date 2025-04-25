@@ -1395,7 +1395,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 			// a blank atd pdf
 			sql = `Select emp_id,pdf_batch from asn_claims
 			where emp_id='${req.params.e_num}' 
-			and ( pdf_batch = "" or pdf_batch is null ) 
+			and ( pdf_batch <> "" or pdf_batch is not null ) 
 			and transaction_year = '2025'
 			order by emp_id`
 
@@ -1403,7 +1403,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 			.then((db)=>{
 				db.query(`${sql}`, (error,results) => {	
 
-					//console.log( '===checkpdf()===', sql,  results)
+					console.log( '===checkpdf()===', sql,  results)
 					
 					if(results.length > 0){
 						console.log('FOUND!')
