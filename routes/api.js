@@ -593,7 +593,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			order by sum(a.amount) desc limit 5;`
 		}
 
-		console.log('==getprintpdf== ', sql)
+		console.log('==getprintpdf== ')
 		connectDb()
 		.then((db)=>{
 			db.query(sql,(error,results) => {	
@@ -694,7 +694,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 //==========top 10 
 router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 	let sqlins
-	
+
 	if(req.params.region !== 'ALL'){
 		
 		switch( req.params.grpid){
@@ -1354,8 +1354,8 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 	//console.log(req.params.grp_id)
 	switch ( req.params.grp_id ){
-		case "2":
-		case "3":
+		case "2": //jenelle
+		case "3": //april
 		case "4":
 		case "5":
 			sql = `Select emp_id,pdf_batch from asn_claims
@@ -1363,10 +1363,11 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 			and transaction_year = '2025'
 			order by emp_id`
 
+			console.log('checkpdf() ',sql)
 			connectDb()
 			.then((db)=>{
-				db.query(`${sql}`,async(error,results) => {	
-					if(results[0].length > 0){
+				db.query(`${sql}`,(error,results) => {	
+					if(results.length > 0){
 						console.log('OK TO REPRINT')
 						
 						closeDb(db) //close
