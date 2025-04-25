@@ -575,7 +575,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
 			${sqlins} 
 			group by a.pdf_batch
-			order by sum(a.amount) desc;`
+			order by a.pdf_batch+0 desc;`
 		}else{
 			sql =`SELECT 
 			a.emp_id as emp_id,
@@ -588,7 +588,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			join asn_spx_hubs b on a.hubs_location = b.hub 
 			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
 			group by a.pdf_batch
-			order by sum(a.amount) desc;`
+			order by a.pdf_batch+0 desc;`
 		}
 
 		console.log('==getprintpdf== ')
