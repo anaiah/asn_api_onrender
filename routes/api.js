@@ -742,7 +742,7 @@ router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 		
 			console.log( results )
 
-			if ( results.length == 0) {   //data = array 
+			if ( !results ) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
@@ -842,7 +842,7 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 		
-			if ( results.length == 0) {   //data = array 
+			if ( !results  ) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
@@ -1037,7 +1037,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		     
 			//console.log( results)
 
-			if ( results.length == 0 ) {   //data = array 
+			if ( !results ) {   //data = array 
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
