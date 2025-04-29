@@ -611,6 +611,8 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 					results.sort((a, b) => {
 						return a.pdf_batch - b.pdf_batch;
 					});
+
+					console.log( results )
 	
 					res.status(200).json(results)
 				}
@@ -1358,7 +1360,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 	switch ( req.params.grp_id ){
 
 		//these group are designed just to REPRINT  the PDF
-		//and not to ask for a new one
+		//and NOT TO PRODUCE A  new one
 		case "2": //jenelle
 		case "3": //april
 		case "4": //admin / head admin
@@ -1375,10 +1377,9 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 				db.query(`${sql}`,(error,results) => {	
 					
 					console.log('checkpdf() ',sql, 'result ', results )
-		
-					
+							
 					if(results.length > 0){
-						console.log('OK TO REPRINT')
+						console.log('OK TO REPRINT, SENDING NOW...====')
 						
 						closeDb(db) //close
 						res.status(200).json({status:true, batch:`${results[0].pdf_batch}`})
@@ -1408,7 +1409,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 					console.log( '===checkpdf()===', sql,  results)
 					
 					if(results.length > 0){
-						console.log('FOUND!')
+						console.log('=====ERROR, PDF BATCH ALREADY CREATED!====')
 						
 						closeDb(db) //close
 
@@ -1418,16 +1419,17 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 						//==================SEQUENCE==================//
 						pdfBatch( req.params.e_num)
 						.then( seq => {
+							
 							const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
 							where emp_id='${req.params.e_num}' 
 							and transaction_year='2025' 
 							and ( pdf_batch is null or pdf_batch = '' )`
 				
-							//console.log('inside Promise of pdfBatch()' , sql2)	
+							/////console.log('inside Promise of pdfBatch()' , sql2)	
 
 							db.query(sql2, null, (error,xdata) => {
-								//console.log('UPDATE PDF BATCH==', xdata )
-								///console.log(xdata) xdata.affectedRows or changedRows
+								//////console.log('UPDATE PDF BATCH==', xdata )
+								//////console.log(xdata) xdata.affectedRows or changedRows
 							})
 
 							console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD! BATCH->',seq)
@@ -1499,15 +1501,16 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 
 				let nFormatTotal = addCommas(parseFloat(total_amt).toFixed(2))
 				let nTotal = parseFloat(total_amt).toFixed(2)
-
+		
 				//=== CREATE MEDRX ===========
 				asnpdf.reportpdf( xdata, curr_date,  nFormatTotal, nTotal, req.params.batch)
 				.then( reportfile =>{
-					console.log('REPORT PDF SUCCESS!', reportfile)
+
+					console.log('==REPORT PDF SUCCESS!===', reportfile)
 					
 					//============ force download
 					res.download( reportfile, reportfile,(err)=>{
-						console.log('==downloading pdf===')
+						console.log('==DOWNLOADING PDF TO CLIENT===')
 						if(err){
 							console.error('Error in Downloading ',reportfile,err)
 
@@ -1550,50 +1553,12 @@ router.get('/deletepdf/:e_num', async(req, res) => {
 })//end Utils.deletepdfse{
 
 
-router.get('/getzap/:eqptid', async(req,res)=>{
-	sql = `DELETE from equipment
-	where equipment_id = '${req.params.eqptid}'`
-
-	connectDb()
-	.then((db)=>{
-	
-		db.query(sql, null ,(error,data) => {	
-			if ( data.length  == 0) {   //data = array 
-				console.log('no rec')
-				
-				closeDb(db);//CLOSE connection
-				//console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
-
-
-			}else{
-
-				res.status(200).json({ status : true, voice:'Equipment Deleted Successfully', message:'Equipment Deleted Successfully' })			
-			}//eif
-			closeDb( db )
-		}) //end db.query 
-	})//tne .then(db)
-	
-})
-
 
 //===test menu-submenu array->json--->
 router.get('/menu/:grpid', async(req,res)=>{
 	console.log('=== menu()')
 	connectDb()
     .then((db)=>{ 
-
-		// sql2 =`SELECT 
-		// menu, 
-		// menu_icon, 
-		// JSON_ARRAYAGG( 
-		// 	JSON_OBJECT( 'sub', submenu, 
-		// 				'icon', submenu_icon,
-		// 				'href', href ) 
-		// ) AS list 
-		// FROM asn_menu 
-		// group by menu , grp_id
-		// HAVING grp_id  = ${req.params.grpid}
-		// ORDER BY sequence `
 
 		sql2 = `SELECT menu,
 			menu_icon,

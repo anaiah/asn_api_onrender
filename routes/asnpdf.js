@@ -44,13 +44,13 @@ module.exports =  {
             let htmlx = fs.readFileSync(path.join(__dirname, "report.html"
 
             ), "utf8")
-            console.log('OPENING=== report.html*** ')
+            console.log('=====OPENING=== report.html*** ')
 
             //===== Vantaztic Logo========
             const bitmap = fs.readFileSync( path.join(__dirname, "asiaone.png") )
             const logo = bitmap.toString('base64');
 
-            console.log(`CREATING REPORT PDF FILE===..`)
+            console.log(`=======CREATING REPORT PDF FILE===..`)
             //console.log('curent path is ', __dirname)
             
             let options = {
