@@ -1049,7 +1049,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 			
 				let xpdfbatch
 
-				//console.log(results)
+				console.log(results)
 
 				
 				if( results[0].pdf_batch!==null ){
