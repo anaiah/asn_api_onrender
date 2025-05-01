@@ -1010,7 +1010,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		and (b.pdf_batch is null or b.pdf_batch = '')
 		${sqlins} 
 		GROUP BY b.emp_id,b.full_name, a.region 
-		ORDER BY sum(b.amount) DESC;`
+		ORDER BY sum(b.amount) DESC`
 
 	}else{
 		sql=`SELECT b.full_name as rider, 
@@ -1026,7 +1026,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		and b.transaction_year='2025'
 		and (b.pdf_batch is null or b.pdf_batch = '')
 		GROUP BY b.emp_id,b.full_name, a.region 
-		ORDER BY sum(b.amount) DESC;`
+		ORDER BY sum(b.amount) DESC`
 		
 	}
 
@@ -1043,75 +1043,80 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 				console.log('no rec')
 				closeDb(db);//CLOSE connection
 		
-				res.status(500).send('** No Record Yet! ***')
+				res.status(500).send([])
 		
 			}else{ 
 			
-				let xpdfbatch
+				if(results.length>0){
+					let xpdfbatch
+					console.log('dito',sql)
+					console.log,(sql, 'getrecord ', results)
 
-				console.log,(sql, 'getrecord ', results)
-
-				
-				if( results[0].pdf_batch!==null ){
-					xpdfbatch = "ATD # " + results[0].pdf_batch
-				}else{
-					xpdfbatch = "ATD PDF NOT YET PROCESSED"
-				}
-				let xtable = 
-				`<div class="col-lg-8">
-					<div class='ms-2'><H2 style="color:#dc4e41">${xpdfbatch}</H2></div>
-				<table class="table w-100	" > 
-				<thead>
-					<tr>
-					<th>Rider</th>
-					<th align=right>Amount</th>
-					</tr>
-				</thead>
-				<tbody>`
-
-				//iterate top 10
-				let total_amt = 0
-				for(let zkey in results){
-					total_amt+=parseFloat(results[zkey].total)
-
-					xtable+= `<tr>
-					<td>
-					<span class='a2'>${results[zkey].rider}</span><br>
-					<span class='a3'>${results[zkey].emp_id}</span><br>
-					<span class='a3'>${results[zkey].hub}</span><br>
-					<span class='a3'>Batch # ${results[zkey].batch_file}</span>
 					
+					if( results[0].pdf_batch!==null ){
+						xpdfbatch = "ATD # " + results[0].pdf_batch
+					}else{
+						xpdfbatch = "ATD PDF NOT YET PROCESSED"
+					}
+					let xtable = 
+					`<div class="col-lg-8">
+						<div class='ms-2'><H2 style="color:#dc4e41">${xpdfbatch}</H2></div>
+					<table class="table w-100	" > 
+					<thead>
+						<tr>
+						<th>Rider</th>
+						<th align=right>Amount</th>
+						</tr>
+					</thead>
+					<tbody>`
+
+					//iterate top 10
+					let total_amt = 0
+					for(let zkey in results){
+						total_amt+=parseFloat(results[zkey].total)
+
+						xtable+= `<tr>
+						<td>
+						<span class='a2'>${results[zkey].rider}</span><br>
+						<span class='a3'>${results[zkey].emp_id}</span><br>
+						<span class='a3'>${results[zkey].hub}</span><br>
+						<span class='a3'>Batch # ${results[zkey].batch_file}</span>
+						
+						</td>
+						<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
+						</tr>`
+
+					}//endfor
+					let visible
+
+					if(results[0].length > 0){
+						visible = "disabled"	
+					}else{
+						visible = ""
+					}
+					xtable+=
+
+					`<tr>
+					<td  align=right><b>TOTAL : </b></td>
+					<td align=right><b> ${addCommas(parseFloat(total_amt).toFixed(2))}</b></td>
+					</tr>
+					<tr>
+					<td colspan=2>
+					<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="javascript:asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
 					</td>
-					<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
-					</tr>`
+					</tr>
+					</tbody>
+					</table>
+					</div>`
 
-				}//endfor
-				let visible
-
-				if(results[0].length > 0){
-					visible = "disabled"	
+					closeDb(db);//CLOSE connection
+		
+					res.status(200).send(xtable)
 				}else{
-					visible = ""
-				}
-				xtable+=
-
-				`<tr>
-				<td  align=right><b>TOTAL : </b></td>
-				<td align=right><b> ${addCommas(parseFloat(total_amt).toFixed(2))}</b></td>
-				</tr>
-				<tr>
-				<td colspan=2>
-				<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
-				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="javascript:asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
-				</td>
-				</tr>
-				</tbody>
-				</table>
-				</div>`
-
-				closeDb(db);//CLOSE connection
-	
-				res.status(200).send(xtable)				
+					closeDb(db)
+					res.status(200).send('**No Record Found***')
+				}			
 				
 			}//eif
 		
