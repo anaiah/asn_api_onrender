@@ -1007,6 +1007,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
 		and b.transaction_year='2025' 
+		and (b.pdf_batch is null or b.pdf_batch = '')
 		${sqlins} 
 		GROUP BY b.emp_id,b.full_name, a.region 
 		ORDER BY sum(b.amount) DESC;`
@@ -1023,6 +1024,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
 		and b.transaction_year='2025'
+		and (b.pdf_batch is null or b.pdf_batch = '')
 		GROUP BY b.emp_id,b.full_name, a.region 
 		ORDER BY sum(b.amount) DESC;`
 		
