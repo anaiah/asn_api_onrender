@@ -612,7 +612,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 						return a.pdf_batch - b.pdf_batch;
 					});
 
-					console.log( results )
+					//console.log( results )
 	
 					res.status(200).json(results)
 				}
@@ -1049,7 +1049,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 			
 				let xpdfbatch
 
-				console.log(results)
+				console.log,(sql, 'getrecord ', results)
 
 				
 				if( results[0].pdf_batch!==null ){
