@@ -981,7 +981,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 
 	}//eif
 
-
+	let visible
 
 	if( req.params.region!=='ALL'){
 		switch( req.params.grpid){
@@ -995,6 +995,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 
 		}//endcase
 		
+		visible=""
 
 		sql=`SELECT b.full_name as rider, 
 		b.emp_id, 
@@ -1013,6 +1014,9 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		ORDER BY sum(b.amount) DESC`
 
 	}else{
+
+		visible = "disabled"
+
 		sql=`SELECT b.full_name as rider, 
 		b.emp_id, 
 		b.hubs_location as hub, 
@@ -1029,7 +1033,6 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		ORDER BY sum(b.amount) DESC`
 		
 	}
-
 
 	console.log( 'getrecord()===== Search Claims processing...')
 	
@@ -1087,13 +1090,9 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 						</tr>`
 
 					}//endfor
-					let visible
+					
 
-					if(results[0].length > 0){
-						visible = "disabled"	
-					}else{
-						visible = ""
-					}
+					
 					xtable+=
 
 					`<tr>
@@ -1102,7 +1101,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 					</tr>
 					<tr>
 					<td colspan=2>
-					<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+					<button id='download-btn' type='button' ${visible} class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
 					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="javascript:asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
 					</td>
 					</tr>
