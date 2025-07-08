@@ -1107,7 +1107,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 					</tr>
 					</tbody>
 					</table>
-					</div>`
+					</div>` 
 
 					closeDb(db);//CLOSE connection
 		
