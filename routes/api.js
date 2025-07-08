@@ -1004,16 +1004,15 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.emp_id, 
 		b.hubs_location as hub, 
 		a.region, 
-		format(SUM(b.amount),2) as total, 
+		coalesce(round(sum(b.amount),2),0) as total,
 		b.pdf_batch, 
 		b.batch_file 
 		FROM asn_spx_hubs a 
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
-		and b.transaction_year='2025' 
 		and (b.pdf_batch is null or b.pdf_batch = '')
 		${sqlins} 
-		GROUP BY b.emp_id,b.full_name, a.region 
+		GROUP BY b.emp_id
 		ORDER BY sum(b.amount) DESC`
 
 	}else{
@@ -1029,10 +1028,9 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.batch_file 
 		FROM asn_spx_hubs a 
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
-		and b.transaction_year='2025'
 		WHERE ${sqlzins} 
 		and (b.pdf_batch is null or b.pdf_batch = '')
-		GROUP BY b.emp_id,b.full_name
+		GROUP BY b.emp_id
 		ORDER BY sum(b.amount) DESC`
 		
 	}
