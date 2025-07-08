@@ -1024,7 +1024,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.emp_id, 
 		b.hubs_location as hub, 
 		a.region, 
-		FORMAT(COALESCE(sum(b.amount),0),2) as total,
+		coalesce(round(sum(b.amount),2),0) as total,
 		b.pdf_batch, 
 		b.batch_file 
 		FROM asn_spx_hubs a 
@@ -1037,7 +1037,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		
 	}
 
-	console.log( 'getrecord()===== Search Claims processing...',sql)
+	console.log( 'getrecord()===== Search Claims processing...',sql, results)
 	
 	connectDb()
 	.then((db)=>{
