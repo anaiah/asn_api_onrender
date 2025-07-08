@@ -1092,7 +1092,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 					}//endfor
 					
 
-					
+					//TAKE OUT <button id='download-btn' type='button' ${visible} 
 					xtable+=
 
 					`<tr>
@@ -1101,7 +1101,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 					</tr>
 					<tr>
 					<td colspan=2>
-					<button id='download-btn' type='button' ${visible} class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+					<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
 					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="javascript:asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
 					</td>
 					</tr>
