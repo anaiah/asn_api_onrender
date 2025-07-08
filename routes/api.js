@@ -1032,7 +1032,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		and b.transaction_year='2025'
 		WHERE ${sqlzins} 
 		and (b.pdf_batch is null or b.pdf_batch = '')
-		GROUP BY b.emp_id,b.full_name, a.region 
+		GROUP BY b.emp_id,b.full_name
 		ORDER BY sum(b.amount) DESC`
 		
 	}
