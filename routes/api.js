@@ -1024,7 +1024,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.emp_id, 
 		b.hubs_location as hub, 
 		a.region, 
-		FORMAT(COALESCE(sum(b.sales_amount,0)),2) as total, 
+		FORMAT(COALESCE(sum(b.amount),0),2) as total,
 		b.pdf_batch, 
 		b.batch_file 
 		FROM asn_spx_hubs a 
