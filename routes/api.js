@@ -718,7 +718,8 @@ router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 			 from asn_claims a 
 			 join asn_spx_hubs b 
 			 on a.hubs_location = b.hub 
-			 where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025' 
+			 and a.transaction_year='2025'
+			 where (a.pdf_batch is null or a.pdf_batch = "")  
 			 ${sqlins}
 			 group by a.hubs_location,b.region 
 			 order by sum(a.amount) desc limit 5`
@@ -816,7 +817,8 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 		(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
 		from asn_claims a 
 		join asn_spx_hubs b on a.hubs_location = b.hub 
-		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025' 
+		and a.transaction_year='2025'
+		where (a.pdf_batch is null or a.pdf_batch = "")  
 		${sqlins} 
 		group by a.emp_id,a.full_name 
 		order by sum(a.amount) desc limit 5;
@@ -831,7 +833,8 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 		( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
 		from asn_claims a 
 		join asn_spx_hubs b on a.hubs_location = b.hub 
-		where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025' 
+		and a.transaction_year='2025'
+		where (a.pdf_batch is null or a.pdf_batch = "")  
 		group by a.emp_id,a.full_name
 		order by sum(a.amount) desc limit 5;`
 	}
@@ -1026,8 +1029,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.batch_file 
 		FROM asn_spx_hubs a 
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
-		WHERE ${sqlzins} 
 		and b.transaction_year='2025'
+		WHERE ${sqlzins} 
 		and (b.pdf_batch is null or b.pdf_batch = '')
 		GROUP BY b.emp_id,b.full_name, a.region 
 		ORDER BY sum(b.amount) DESC`
@@ -1092,7 +1095,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 					}//endfor
 					
 
-					//TAKE OUT <button id='download-btn' type='button' ${visible} 
+					//TAKE OUT <button id='download-btn' type='button' ${visible} ==== JULY 08, 2025 EDITED ************
 					xtable+=
 
 					`<tr>
