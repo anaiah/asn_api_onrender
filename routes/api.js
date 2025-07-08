@@ -1037,13 +1037,13 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		
 	}
 
-	console.log( 'getrecord()===== Search Claims processing...',sql, results)
+	console.log( 'getrecord()===== Search Claims processing...',sql)
 	
 	connectDb()
 	.then((db)=>{
 		db.query(`${sql}`,(error,results) => {	
 		     
-			//console.log( results)
+			console.log( results)
 
 			if ( !results ) {   //data = array 
 				console.log('no rec')
