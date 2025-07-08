@@ -1024,7 +1024,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.emp_id, 
 		b.hubs_location as hub, 
 		a.region, 
-		format(SUM(b.amount),2) as total, 
+		FORMAT(COALESCE(sum(b.sales_amount,0)),2) as total, 
 		b.pdf_batch, 
 		b.batch_file 
 		FROM asn_spx_hubs a 
@@ -1055,7 +1055,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 			
 				if(results.length>0){
 					let xpdfbatch
-					console.log('dito',sql)
+					//console.log('dito',sql)
 					console.log,(sql, 'getrecord ', results)
 
 					
