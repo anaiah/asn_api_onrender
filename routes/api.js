@@ -51,25 +51,10 @@ const ftpclient = require('scp2')
 const app = express()
 
 app.use( cookieParser() )
+
 const { connectPg, closePg, closeDb, connectDb}  = require('../db')
+const db  = require('../db')// your pool module
 
-connectPg() 
-.then((pg)=>{
-    console.log("====api.js ASIANOW POSTGRESQL CONNECTION SUCCESS!====")
-    closePg(pg);
-})                        
-.catch((error)=>{
-    console.log("***ERROR, API.JS CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
-}); 
-
-connectDb()
-.then((db)=>{
-    console.log("====API.JS ASIANOW MYSQL CONNECTION SUCCESS!====")
-    closeDb(db);
-})                        
-.catch((error)=>{
-    console.log("***ERROR, CAN'T CONNECT TO MYSQL DB!****",error.code)
-});  
 //=====CLAIMS UPLOAD
 // Set up multer for file uploads
 const storage = multer.memoryStorage();
@@ -103,8 +88,7 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 		
 		//console.log('json value ', data)
 		const insertPromises =[]
- 
-		
+ 		
 		const conn = await mysqls.createConnection(dbconfig);
 
 			for( const record of data){
@@ -136,100 +120,51 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 router.get('/loginpost/:uid/:pwd',async(req,res)=>{
     console.log('login=>',req.params.uid,req.params.pwd)
     
-    connectDb()
-    .then((db)=>{
+	
+	try {
+		const {uid,pwd} = req.params
 
-		let sql =`SELECT a.id,a.full_name, 
+		const sql =`SELECT a.id,a.full_name, 
 			a.email, GROUP_CONCAT(distinct a.region) as region, 
 			a.grp_id,a.pic 
 			from asn_users a 
-			WHERE a.email='${req.params.uid}' and a.pwd='${req.params.pwd}'` 
-        
-			console.log(`${sql}`)
+			WHERE a.email='?' and a.pwd='?';` 
 
-        db.query( sql, (err,data) => { 
-
-			console.log( data)
-			//console.log(data.length)
-            //console.log(sql)
-			if ( data[0].full_name == null) {  //data = array 
-				console.log('no rec')
-
-				closeDb(db);//CLOSE connection
-                //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
-
-                return res.status(400).json({
-					message: "No Matching Record!",
-					voice:"No Matching Record!",
-					found:false
-				})  
-				
-				
-
-            }else{  //=========== ON SUCCESS!!! ============
-
-				//get ip address
-				const ipaddress = IP.address()
-
-				/*  ===TAKE OUT TEMP  IP ADDRESS FEB 2. 2024
-				let ipaddress = iprequest.getClientIp(req)
-
-				if (ipaddress.substring(0, 7) == "::ffff:") {
-					ipaddress = ipaddress.substring(7)
-				} 
-				*/
-                console.log('osndp render login data ',data[0])
-				//set cookie-parser
-				res.writeHead(200, {
-						"Set-Cookie": `xfname=${data[0].full_name.toUpperCase()}; HttpOnly`,
-						"Access-Control-Allow-Credentials": "true"
-	  			})
-
-			  res.write(JSON.stringify({
+		const [data, fields] = await db.query(sql,[uid,pwd]);
+		
+		if (data.length > 0) {
+			// record exists, proceed
+			// e.g., login success
+ 			return res.status(200).json({
 				email	: 	data[0].email,
 				fname   :   data[0].full_name.toUpperCase(),
-				message	: 	`Welcome to Asia Now Enterprise Incorporated System, ${data[0].full_name.toUpperCase()}! `,
-				voice	: 	`Welcome to Asia Now Enterprise Incorporated System, ${data[0].full_name}! `,		
+				message	: 	`Welcome to Asia Now , ${data[0].full_name.toUpperCase()}! `,
+				voice	: 	`Welcome to Asia Now , ${data[0].full_name}! `,		
 				grp_id	:	data[0].grp_id,
 				pic 	: 	data[0].pic,
-				ip_addy :   ipaddress,
+				ip_addy :   null,
 				id      :   data[0].id,
 				region  :   data[0].region,
-				found:true
-			}))
+				found   :   true
+			})
 
-			res.send()
-			  /*
-				//res.cookie('fname', data[0].full_name.toUpperCase(), { maxAge: 60*1000, httpOnly: true});
-				res.cookie('grp_id', data[0].grp_id, { maxAge: 60*1000,httpOnly: true});
-				res.cookie('f_email',data[0].email, {maxAge: 60*1000,httpOnly: true});
-				res.cookie('f_voice', `Welcome to Executive Optical, O S N D P System ${data[0].full_name}! `, {maxAge: 60*1000,httpOnly: true});
-				res.cookie('f_pic',data[0].pic, {httpOnly: true});
-				
-				res.status(200).json({
-					email	: 	data[0].email,
-                    fname   :   data[0].full_name.toUpperCase(),
-                    message	: 	`Welcome to EO-OSNDP ${data[0].full_name.toUpperCase()}! `,
-					voice	: 	`Welcome to Executive Optical, O S N D P System ${data[0].full_name}! `,		
-                    grp_id	:	data[0].grp_id,
-					pic 	: 	data[0].pic,
-					ip_addy :   ipaddress,
-					found:true
-                })
-				*/
-				//=============== CALL FUNCTION, call express method, call func, call router
-				//return res.redirect(`/changepage/${data[0].grp_id}`)
+		} else {
+			// handle no record
+			// e.g., invalid credentials
+			return res.status(200).json({
+				message : "No Matching Record!",
+				voice   : "No Matching Record!",
+				found   : false
+			})  
 
-                closeDb(db);//CLOSE connection
-                //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
-                
-            }//EIF
-           
-	   })//END QUERY 
-       
-    }).catch((error)=>{
-        res.status(500).json({error:'No Fetch Docs'})
-    }) 
+		}
+
+	} catch (err) {
+		console.error('Error:', err);
+		res.status(500).send('Error occurred');
+	}
+
+   
 })//== end loginpost
 
 
@@ -1471,21 +1406,91 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 })
 
 //======= CREATE PDF
-router.get('/createpdf/:e_num/:batch', async(req, res)=>{
+router.get('/createpdf/:e_num/:batch/:whois', async (req, res) => {
+  console.log('===createpdf()====', req.params.e_num);
+  
+  const { e_num, batch, whois } = req.params;
+  
+  // Step 1: Update download_empid with whois
+  try {
+    await db.query(
+      'UPDATE asn_claims SET download_empid = ? WHERE emp_id = ? AND pdf_batch = ?',
+      [whois, e_num, batch]
+    );
+  } catch (err) {
+    console.error('Error updating download_empid:', err);
+    return res.status(500).json({ error: 'Failed to update download_empid' });
+  }
+  
+  // Step 2: Fetch report data
+  const sql = `
+    SELECT emp_id,
+           full_name as rider,
+           category,
+           hubs_location as hub, 
+           track_number as track,
+           claims_reason as reason,
+           SUM(amount) as total,
+           pdf_batch
+    FROM asn_claims
+    WHERE emp_id = ? AND pdf_batch = ?
+    GROUP BY full_name, emp_id, category, hubs_location, track_number, claims_reason
+    ORDER BY full_name;
+  `;
+
+  try {
+    const [results] = await db.query(sql, [e_num, batch]);
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'No records found' });
+    }
+
+    let total_amt = 0;
+    results.forEach(r => {
+      r.total = parseFloat(r.total).toFixed(2);
+      total_amt += parseFloat(r.total);
+    });
+
+    const totalFormatted = addCommas(parseFloat(total_amt).toFixed(2));
+    const totalFixed = parseFloat(total_amt).toFixed(2);
+    const curr_date = strdates();
+
+    // Generate PDF
+    const reportfile = await asnpdf.reportpdf(results, curr_date, totalFormatted, totalFixed, batch);
+
+    // Download PDF
+    res.download(reportfile, reportfile, (err) => {
+      if (err) {
+        console.error('Error in Downloading', reportfile, err);
+        // Optionally, handle cleanup if needed
+        return res.status(500).send(`Error in Downloading ${reportfile}`);
+      }
+      console.log('Successfully downloaded:', reportfile);
+    });
+  } catch (err) {
+    console.error('Error generating report:', err);
+    res.status(500).json({ error: 'Error generating report' });
+  }
+});
+
+
+
+router.get('/xxxcreatepdf/:e_num/:batch/:whois', async(req, res)=>{
 
 	console.log('===createpdf()====', req.params.e_num)
+	
+	
 	const sql = `SELECT emp_id,
-	full_name as rider,
-	category,
-	hubs_location as hub, 
-	track_number as track,
-	claims_reason as reason,
-	sum( amount ) as total,
-	pdf_batch
-	from asn_claims
-	group by full_name,emp_id,category,hubs_location, track_number,claims_reason
-	having emp_id='${req.params.e_num}' and pdf_batch ='${req.params.batch}'
-	order by full_name`
+		full_name as rider,
+		category,
+		hubs_location as hub, 
+		track_number as track,
+		claims_reason as reason,
+		sum( amount ) as total,
+		pdf_batch
+		from asn_claims
+		group by full_name,emp_id,category,hubs_location, track_number,claims_reason
+		having emp_id='${req.params.e_num}' and pdf_batch ='${req.params.batch}'
+		order by full_name`
 
 	console.log('==== createpdf() ==== ')
 
@@ -1518,7 +1523,7 @@ router.get('/createpdf/:e_num/:batch', async(req, res)=>{
 				let nFormatTotal = addCommas(parseFloat(total_amt).toFixed(2))
 				let nTotal = parseFloat(total_amt).toFixed(2)
 		
-				//=== CREATE MEDRX ===========
+				//=== CREATE PDF ===========
 				asnpdf.reportpdf( xdata, curr_date,  nFormatTotal, nTotal, req.params.batch)
 				.then( reportfile =>{
 

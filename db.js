@@ -2,9 +2,29 @@ const mysql = require('mysql2'); //use promise based mysql2
 const {Client} = require('pg');
 
  
-//const uri = process.env.DB_URL+process.env.DB_NAME
+let client
+
+const pool = mysql.createPool({
+   host: 'srv1759.hstgr.io',
+    user: 'u899193124_asianow',
+    password: 'g12@c3M312c4',
+    database: 'u899193124_asianow',
+    port:3306,
+    waitForConnections: true, // default
+    connectionLimit: 200,       // <-- Set your pool size here
+    queueLimit: 0,      
+    multipleStatements: true
+});
+
+// Promisify for async/await
+const poolPromise = pool.promise();
 
 module.exports={
+
+    query: (sql, params) => poolPromise.query(sql, params),
+  
+    // optionally, add a method to get a connection if needed:
+    getConnection: () => poolPromise.getConnection(),
 
     connectDb :async()=>{
 
