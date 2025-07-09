@@ -132,7 +132,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 			WHERE a.email=? and a.pwd=?` 
 
 		const [data, fields] = await db.query(sql,[uid,pwd]);
-		console.log(data[0])
+		//console.log(data[0])
 		if (data.length > 0) {
 			// record exists, proceed
 			// e.g., login success
@@ -513,12 +513,12 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			a.full_name as rider, 
 			a.hubs_location as hub, 
 			round(sum( a.amount)) as total, 
-			(select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
+			b.region,
 			a.pdf_batch
 			from asn_claims a 
-			join asn_spx_hubs b on a.hubs_location = b.hub 
-			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
-			${sqlins} 
+			left join asn_spx_hubs b on a.hubs_location = b.hub ${sqlins} 
+			where a.pdf_batch like 'ASN%' 
+			and a.transaction_year='2025' 
 			group by a.pdf_batch
 			order by a.pdf_batch+0 desc;`
 		}else{
@@ -527,11 +527,12 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			a.full_name as rider,
 			a.hubs_location as hub, 
 			round(sum( a.amount)) as total, 
-			( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region ,
+			b.region,
 			a.pdf_batch
 			from asn_claims a 
-			join asn_spx_hubs b on a.hubs_location = b.hub 
-			where a.pdf_batch like 'ASN%' and a.transaction_year='2025' 
+			left join asn_spx_hubs b on a.hubs_location = b.hub 
+			where a.pdf_batch like 'ASN%' 
+			and a.transaction_year='2025' 
 			group by a.pdf_batch
 			order by a.pdf_batch+0 desc;`
 		}
@@ -664,9 +665,9 @@ router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 		COALESCE(ROUND(SUM(b.amount),2),0) AS total
 		FROM asn_claims b 
 		LEFT JOIN  asn_spx_hubs a
-		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
+		ON a.hub = b.hubs_location ${sqlins}   
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		${sqlins} 
+		AND b.transaction_year='2025'
 		GROUP BY b.hubs_location, a.region
 		ORDER BY total DESC LIMIT 5;`
 			 
@@ -678,8 +679,9 @@ router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 		COALESCE(ROUND(SUM(b.amount),2),0) AS total
 		FROM asn_claims b 
 		LEFT JOIN asn_spx_hubs a 
-		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
+		ON a.hub = b.hubs_location  
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+		AND b.transaction_year='2025'
 		GROUP BY b.hubs_location, a.region
 		ORDER BY total DESC LIMIT 5;`
 	}
@@ -770,10 +772,10 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 		b.batch_file 
 		FROM asn_claims b 
 		LEFT JOIN asn_spx_hubs a 
-		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
+		ON a.hub = b.hubs_location ${sqlins}   
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
- 		${sqlins} 
-		GROUP BY b.emp_id
+		AND b.transaction_year='2025'
+ 		GROUP BY b.hubs_location
 		ORDER BY total DESC LIMIT 5;`
 	}else{
 
@@ -787,9 +789,10 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 		b.batch_file 
 		FROM asn_claims b 
 		LEFT JOIN asn_spx_hubs a 
-		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
+		ON a.hub = b.hubs_location  
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		GROUP BY b.emp_id
+		AND b.transaction_year='2025'
+		GROUP BY b.hubs_location
 		ORDER BY total DESC LIMIT 5;`
 	}
 	
@@ -962,14 +965,16 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.pdf_batch, 
 		b.batch_file 
 		FROM asn_claims b 
-		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location and b.transaction_year='2025' 
+		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location  
+		${sqlins} 
 		WHERE ${sqlzins} 
 		and (b.pdf_batch is null or b.pdf_batch = '')
-		${sqlins} 
-		GROUP BY b.emp_id
-		ORDER BY sum(b.amount) DESC`
+		and b.transaction_year='2025'
+		GROUP BY b.hubs_location
+		ORDER BY total DESC`
 
 	}else{
+		//===if the one opeing is grp 2, 3 admins, show all with pdf batch only to reprint 
 
 		visible = "disabled"
 		
@@ -981,11 +986,12 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		b.pdf_batch, 
 		b.batch_file 
 		FROM asn_claims b 
-		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location and b.transaction_year='2025' 
+		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location  
 		WHERE ${sqlzins} 
 		and (b.pdf_batch is not null or b.pdf_batch <> '')
-		GROUP BY b.hubs_location, b.emp_id
-		ORDER BY sum(b.amount) DESC`
+		and b.transaction_year='2025'
+		GROUP BY b.hubs_location
+		ORDER BY total DESC`
 		
 	}
 
