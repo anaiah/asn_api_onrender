@@ -1439,7 +1439,7 @@ router.get('/createpdf/:e_num/:batch/:whois', async (req, res) => {
 		b.category,
 		b.hubs_location as hub, 
 		a.region, 
-		coalesce(round(sum(b.amount),2),0) as total,
+		coalesce(round(sum(b.amount),2),0) as amount,
 		b.pdf_batch, 
 		b.track_number as track,
 		b.claims_reason as reason,
