@@ -136,19 +136,28 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 		if (data.length > 0) {
 			// record exists, proceed
 			// e.g., login success
- 			return res.status(200).json({
-				email	: 	data[0].email,
-				fname   :   data[0].full_name.toUpperCase(),
-				message	: 	`Welcome to Asia Now , ${data[0].full_name.toUpperCase()}! `,
-				voice	: 	`Welcome to Asia Now , ${data[0].full_name}! `,		
-				grp_id	:	data[0].grp_id,
-				pic 	: 	data[0].pic,
-				ip_addy :   null,
-				id      :   data[0].id,
-				region  :   data[0].region,
-				found   :   true
-			})
+			if(data[0].full_name === null){
+				return res.status(200).json({
+					message : "No Matching Record!",
+					voice   : "No Matching Record!",
+					found   : false
+				})  
 
+			}else{
+				return res.status(200).json({
+					email	: 	data[0].email,
+					fname   :   data[0].full_name.toUpperCase(),
+					message	: 	`Welcome to Asia Now , ${data[0].full_name.toUpperCase()}! `,
+					voice	: 	`Welcome to Asia Now , ${data[0].full_name}! `,		
+					grp_id	:	data[0].grp_id,
+					pic 	: 	data[0].pic,
+					ip_addy :   null,
+					id      :   data[0].id,
+					region  :   data[0].region,
+					found   :   true
+				})
+			}
+ 			
 		} else {
 			// handle no record
 			// e.g., invalid credentials
