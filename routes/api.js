@@ -1317,7 +1317,7 @@ router.get('/pdfx', async(req,res)=>{
 //======= CHECK PDF FIRST BEFORE CREATING ==============
 router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
-	//console.log(req.params.grp_id)
+	console.log('CHECKPDF()===',req.params.grp_id)
 	switch ( req.params.grp_id ){
 
 		//these group are designed just to REPRINT  the PDF
