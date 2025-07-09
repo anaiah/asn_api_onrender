@@ -53,6 +53,7 @@ const app = express()
 app.use( cookieParser() )
 
 const { connectPg, closePg, closeDb, connectDb}  = require('../db')
+
 const db  = require('../db')// your pool module
 
 //=====CLAIMS UPLOAD
@@ -131,7 +132,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 			WHERE a.email=? and a.pwd=?` 
 
 		const [data, fields] = await db.query(sql,[uid,pwd]);
-		
+		console.log(data[0])
 		if (data.length > 0) {
 			// record exists, proceed
 			// e.g., login success
