@@ -757,7 +757,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
 		${sqlIns}
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='2025'
-        GROUP BY b.hubs_location, b.full_name, b.emp_id, a.region, b.pdf_batch, b.batch_file
+        GROUP BY b.hubs_location
         ORDER BY total DESC LIMIT 5;
       `;
     } else {
@@ -773,7 +773,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='2025'
-        GROUP BY b.hubs_location, b.full_name, b.emp_id, a.region, b.pdf_batch, b.batch_file
+        GROUP BY b.hubs_location
         ORDER BY total DESC LIMIT 5;
       `;
     }
