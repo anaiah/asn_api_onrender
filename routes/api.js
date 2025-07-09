@@ -641,218 +641,180 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 
 })
 
-//==========top 10 
-router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
-	let sqlins
+//==========TOP 5 HUB 
+router.get('/gethub/:region/:grpid/:email', async (req, res) => {
+  
+  let sql;
 
-	if(req.params.region !== 'ALL'){
-		
-		switch( req.params.grpid){
-			case "6": //head coord
-				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
-			break
+  try {
+    if (req.params.region !== 'ALL') {
+      let sqlIns = '';
+      switch (req.params.grpid) {
+        case "6": // head coord
+          sqlIns = ` AND a.head_coordinator_email = '${req.params.email}' `;
+          break;
+        case "7": // coord
+          sqlIns = ` AND a.coordinator_email = '${req.params.email}' `;
+          break;
+      }
+      sql = `
+        SELECT  
+          b.hubs_location AS hub, 
+          a.region, 
+          COALESCE(ROUND(SUM(b.amount),2),0) AS total
+        FROM asn_claims b 
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
+		${sqlIns}
+        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+          AND b.transaction_year='2025'
+        GROUP BY b.hubs_location, a.region
+        ORDER BY total DESC LIMIT 5;
+      `
+    } else {
+      sql = `
+        SELECT  
+          b.hubs_location AS hub, 
+          a.region, 
+          COALESCE(ROUND(SUM(b.amount),2),0) AS total
+        FROM asn_claims b 
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+          AND b.transaction_year='2025'
+        GROUP BY b.hubs_location, a.region
+        ORDER BY total DESC LIMIT 5;
+      `
+    }
 
-			case "7": //coord
-				sqlins = ` and b.coordinator_email = '${req.params.email}' `
-			break
+    console.log('Top 5 Hub processing...', sql );
 
-		}//endcase
-		
-		sql =`
-		SELECT  
-		b.hubs_location AS hub, 
-		a.region, 
-		COALESCE(ROUND(SUM(b.amount),2),0) AS total
-		FROM asn_claims b 
-		LEFT JOIN  asn_spx_hubs a
-		ON a.hub = b.hubs_location ${sqlins}   
-		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		AND b.transaction_year='2025'
-		GROUP BY b.hubs_location, a.region
-		ORDER BY total DESC LIMIT 5;`
-			 
-	}else{
-		sql = ` 
-		SELECT  
-		b.hubs_location AS hub, 
-		a.region, 
-		COALESCE(ROUND(SUM(b.amount),2),0) AS total
-		FROM asn_claims b 
-		LEFT JOIN asn_spx_hubs a 
-		ON a.hub = b.hubs_location  
-		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		AND b.transaction_year='2025'
-		GROUP BY b.hubs_location, a.region
-		ORDER BY total DESC LIMIT 5;`
-	}
-	
-	//console.log(sql)
-	console.log('Top 5 Hub processing...')
-	connectDb()
-	.then((db)=>{
-		db.query(`${sql}`,(error,results) => {	
-		
-			console.log( results )
+    // get connection from pool
+    const [results] = await db.query(sql);
+    
+	if (!results || results.length === 0) {
+      res.status(200).send('** No Record Yet! ***');
+      return;
+    }
 
-			if ( !results ) {   //data = array 
-				console.log('no rec')
-				closeDb(db);//CLOSE connection
-		
-				res.status(500).send('** No Record Yet! ***')
-		
-			}else{ 
-			
-				let xtable = 
-				
-				`
-				<h2>(${req.params.region.toUpperCase()})</h2>
-				<div class="col-lg-8">
-					<table class="table"> 
-					<thead>
-						<tr>
-						<th>Region</th>
-						<th>Hub Location</th>
-						<th>Amount</th>
-						</tr>
-					</thead>
-					<tbody>`
+    // Build your HTML table
+    let xtable = `<h2>(${req.params.region.toUpperCase()})</h2>
+    <div class="col-lg-8">
+      <table class="table"> 
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Hub Location</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>`;
+    results.forEach(row => {
+      xtable += `<tr>
+        <td>${row.region}</td>
+        <td>${row.hub}</td>
+        <td align='right'><b>${addCommas(parseFloat(row.total).toFixed(2))}</b></td>
+      </tr>`;
+    });
+    xtable += `</tbody></table></div>`;
 
-					//iterate top 10
-					for(let zkey in results){
-						xtable+= `<tr>
-						<td>${results[zkey].region}</td>
-						<td >${results[zkey].hub}</td>
-						<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
-						<tr>`
+    res.status(200).send(xtable);
+  } catch (err) {
+    console.error('Error processing request:', err);
+    res.status(500).json({ error: 'Error' });
+  }
+});
 
-					}//endfor
 
-					xtable+=	
-					`</tbody>
-					</table>
-					</div>`
-
-					closeDb(db);//CLOSE connection
-		
-					res.status(200).send(xtable)				
-				
-			}//eif
-		
-		})
-
-	}).catch((error)=>{
-		res.status(500).json({error:'Error'})
-	}) 
-})
 
 //================= TOP 5 RIDER
-router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
+// Your db is already imported
+// const db = require('../db'); 
 
-	if( req.params.region!=='ALL'){
-		switch( req.params.grpid){
-			case "6": //head coord
-				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
-			break
+router.get('/getrider/:region/:grpid/:email', async (req, res) => {
+  let sql;
 
-			case "7": //coord
-				sqlins = ` and b.coordinator_email = '${req.params.email}' `
-			break
+  try {
+    // Build your SQL
+    if (req.params.region !== 'ALL') {
+      let sqlIns = '';
+      switch (req.params.grpid) {
+        case "6": // head coord
+          sqlIns = ` AND a.head_coordinator_email = '${req.params.email}' `;
+          break;
+        case "7": // coord
+          sqlIns = ` AND a.coordinator_email = '${req.params.email}' `;
+          break;
+      }
+      sql = `
+        SELECT b.full_name AS rider, 
+               b.emp_id, 
+               b.hubs_location AS hub, 
+               a.region, 
+               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+               b.pdf_batch, 
+               b.batch_file 
+        FROM asn_claims b 
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
+		${sqlIns}
+        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+          AND b.transaction_year='2025'
+        GROUP BY b.hubs_location, b.full_name, b.emp_id, a.region, b.pdf_batch, b.batch_file
+        ORDER BY total DESC LIMIT 5;
+      `;
+    } else {
+      sql = `
+        SELECT b.full_name AS rider, 
+               b.emp_id, 
+               b.hubs_location AS hub, 
+               a.region, 
+               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+               b.pdf_batch, 
+               b.batch_file
+        FROM asn_claims b
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+          AND b.transaction_year='2025'
+        GROUP BY b.hubs_location, b.full_name, b.emp_id, a.region, b.pdf_batch, b.batch_file
+        ORDER BY total DESC LIMIT 5;
+      `;
+    }
 
-		}//endcase
-		
+    // Simply use db.query() because `db` is already your pool object
+    const [results] = await db.query(sql);
 
-		sql = `
-		
-		SELECT b.full_name AS rider, 
-		b.emp_id, 
-		b.hubs_location AS hub, 
-		a.region, 
-		COALESCE(ROUND(SUM(b.amount),2),0) AS total,
-		b.pdf_batch, 
-		b.batch_file 
-		FROM asn_claims b 
-		LEFT JOIN asn_spx_hubs a 
-		ON a.hub = b.hubs_location ${sqlins}   
-		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		AND b.transaction_year='2025'
- 		GROUP BY b.hubs_location
-		ORDER BY total DESC LIMIT 5;`
-	}else{
+    if (!results || results.length === 0) {
+      return res.status(200).send('** No Record Yet! ***');
+    }
 
-		sql =`
-		SELECT b.full_name AS rider, 
-		b.emp_id, 
-		b.hubs_location AS hub, 
-		a.region, 
-		COALESCE(ROUND(SUM(b.amount),2),0) AS total,
-		b.pdf_batch, 
-		b.batch_file 
-		FROM asn_claims b 
-		LEFT JOIN asn_spx_hubs a 
-		ON a.hub = b.hubs_location  
-		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		AND b.transaction_year='2025'
-		GROUP BY b.hubs_location
-		ORDER BY total DESC LIMIT 5;`
-	}
-	
-	console.log('Top 5 Rider processing...')
-	
-	connectDb()
-	.then((db)=>{
-		db.query(`${sql}`,(error,results) => {	
-		
-			if ( !results  ) {   //data = array 
-				console.log('no rec')
-				closeDb(db);//CLOSE connection
-		
-				res.status(500).send('** No Record Yet! ***')
-		
-			}else{ 
-			
-				let xtable = 
-					`<div class="col-lg-8">
-					<h2>(${req.params.region.toUpperCase()})</h2>
-					<table class="table"> 
-					<thead>
-						<tr>
-						<th>Rider</th>
-						<th align=right>Amount</th>
-						</tr>
-					</thead>
-					<tbody>`
+    let xtable = `<div class="col-lg-8">
+      <h2>(${req.params.region.toUpperCase()})</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Rider</th>
+            <th align='right'>Amount</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      
+    results.forEach(row => {
+      xtable += `<tr>
+        <td>
+          ${row.rider}<br>
+          ${row.emp_id}<br>
+          (${row.region}, ${row.hub})
+        </td>
+        <td align='right' valign='bottom'><b>${addCommas(parseFloat(row.total).toFixed(2))}</b>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+      </tr>`;
+    });
+    xtable += `</tbody></table></div>`;
 
-					//iterate top 10
-					for(let zkey in results){
-						xtable+= `<tr>
-						<td>
-						${results[zkey].rider}<br>
-						${results[zkey].emp_id}<br>
-						( ${results[zkey].region}, ${results[zkey].hub} )<br> 
-						</td>
-						<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-						</tr>`
+    res.status(200).send(xtable);
+  } catch (err) {
+    console.error('Error in getrider:', err);
+    res.status(500).json({ error: 'Error' });
+  }
+});
 
-					}//endfor
-
-					xtable+=	
-					`</tbody>
-					</table>
-					</div>`
-
-					closeDb(db);//CLOSE connection
-		
-					res.status(200).send(xtable)				
-				
-			}//eif
-		
-		})
-
-	}).catch((error)=>{
-		res.status(500).json({error:'Error'})
-	}) 
-
-})
 //======= end top 10
 
 
@@ -926,8 +888,132 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 	}) 
 })
 
-//search by id or name
-router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
+//============search by id or name
+router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => {
+  const { enum: emp_id, ename, region, grpid, email } = req.params;
+  let sqlins = '';
+  let sqlzins = '';
+
+  // Build search condition
+  if (ename !== 'blank' && emp_id !== 'blank') {
+    sqlzins = `(b.emp_id LIKE '%${emp_id}%' OR UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%')`;
+  } else if (emp_id !== 'blank') {
+    sqlzins = `b.emp_id = '${emp_id}'`;
+  } else if (ename !== 'blank') {
+    sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
+  }
+
+  try {
+    // Build conditional SQL for region and group
+    if (region !== 'ALL') {
+      switch (grpid) {
+        case '6': // head coord
+          sqlins = ` AND a.head_coordinator_email = '${email}' `;
+          break;
+        case '7': // coord
+          sqlins = ` AND a.coordinator_email = '${email}' `;
+          break;
+      }
+
+      var sql = `
+        SELECT b.full_name AS rider, 
+               b.emp_id, 
+               b.hubs_location AS hub, 
+               a.region, 
+               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+               b.pdf_batch,
+               b.batch_file
+        FROM asn_claims b
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location ${sqlins}
+        WHERE ${sqlzins}
+          AND (b.pdf_batch IS NULL OR b.pdf_batch = '')
+          AND b.transaction_year='2025'
+        GROUP BY b.hubs_location, b.full_name;
+      `;
+    } else {
+      // No region filter, show all
+      var sql = `
+        SELECT b.full_name AS rider, 
+               b.emp_id, 
+               b.hubs_location AS hub, 
+               a.region, 
+               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+               b.pdf_batch,
+               b.batch_file
+        FROM asn_claims b
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+        WHERE ${sqlzins}
+          AND (b.pdf_batch IS NULL OR b.pdf_batch != '')
+          AND b.transaction_year='2025'
+        GROUP BY b.hubs_location, b.full_name;
+      `;
+    }
+
+    console.log('Processing:', sql);
+
+    // Use your existing db pool
+    const [results] = await db.query(sql);
+    if (!results || results.length === 0) {
+      return res.status(200).send('**No Record Found***');
+    }
+
+    let totalAmt = 0;
+    results.forEach(r => {
+      r.total = parseFloat(r.total).toFixed(2);
+      totalAmt += parseFloat(r.total);
+    });
+
+    const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
+    const curr_date = strdates();
+
+	
+    // Build the HTML table for output
+    let xtable = `<div class="col-lg-8">
+      <h2>(${region.toUpperCase()})</h2>
+      <table class='table'>
+        <thead>
+          <tr>
+            <th>Rider</th>
+            <th align='right'>Amount</th>
+          </tr>
+        </thead>
+        <tbody>`;
+    results.forEach(r => {
+      xtable += `<tr>
+        <td>
+          ${r.rider}<br>
+          ${r.emp_id}<br>
+          (${r.region || 'NO REGION'}, ${r.hub})
+        </td>
+        <td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}</b></td>
+      </tr>`;
+    });
+    xtable += `
+      <tr>
+        <td align='right'><b>TOTAL :</b></td>
+        <td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}</b></td>
+      </tr>
+      <tr>
+        <td colspan='2'>
+          <button id='download-btn' type='button' class='btn btn-primary' onclick="asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+			<!-- Continuation from previous code snippet -->
+          <button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
+        </td>
+      </tr>
+    </tbody>
+    </table>
+    </div>`;
+
+    // Send the constructed HTML as response
+    res.status(200).send(xtable);
+  } catch (err) {
+    console.error('Error processing request:', err);
+    res.status(500).json({ error: 'Error' });
+  }
+});
+
+
+router.get('/xxxgetrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 	let sqlzins, sqlins
 	
 	if ( req.params.ename!=="blank" &&  req.params.enum!== "blank"){
