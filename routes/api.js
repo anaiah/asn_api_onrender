@@ -712,27 +712,31 @@ router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 
 		}//endcase
 		
-		sql =`SELECT a.hubs_location as hub, 
-			round(sum( a.amount)) as total, 
-			( select DISTINCT x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region 
-			 from asn_claims a 
-			 join asn_spx_hubs b 
-			 on a.hubs_location = b.hub 
-			 and a.transaction_year='2025'
-			 where (a.pdf_batch is null or a.pdf_batch = "")  
-			 ${sqlins}
-			 group by a.hubs_location,b.region 
-			 order by sum(a.amount) desc limit 5`
-			 
+		sql =`
+		 SELECT  
+		b.hubs_location AS hub, 
+		a.region, 
+		COALESCE(ROUND(SUM(b.amount),2),0) AS total
+		FROM asn_spx_hubs a 
+		INNER JOIN asn_claims b 
+		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
+		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+		${sqlins} 
+		GROUP BY b.hubs_location, a.region
+		ORDER BY total DESC LIMIT 5;`
+		
 			 
 	}else{
-		sql = `SELECT a.hubs_location as hub, 
-		round(sum( a.amount )) as total ,
-		 (select distinct x.region from asn_spx_hubs x where x.hub = a.hubs_location limit 1) as region
-		from asn_claims a 
-		where ( a.pdf_batch is null or a.pdf_batch = "" ) and a.transaction_year='2025' 
-		group by a.hubs_location 
-		order by sum(a.amount) desc LIMIT 5;`
+		sql = ` SELECT  
+		b.hubs_location AS hub, 
+		a.region, 
+		COALESCE(ROUND(SUM(b.amount),2),0) AS total
+		FROM asn_spx_hubs a 
+		INNER JOIN asn_claims b 
+		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
+		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+		GROUP BY b.hubs_location, a.region
+		ORDER BY total DESC LIMIT 5;`
 	}
 	
 	//console.log(sql)
