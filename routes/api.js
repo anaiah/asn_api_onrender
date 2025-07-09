@@ -965,11 +965,18 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
 
     const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
     const curr_date = strdates();
+	let xpdfbatch
 
+	if( results[0].pdf_batch!==null ){
+		xpdfbatch = "ATD # " + results[0].pdf_batch
+	}else{
+		xpdfbatch = "ATD PDF NOT YET PROCESSED"
+	}
 	
     // Build the HTML table for output
     let xtable = `<div class="col-lg-8">
-      <h2>(${region.toUpperCase()})</h2>
+	  <h2>(${region.toUpperCase()})</h2>
+      <h2 style="color:#dc4e41"><BR>${xpdfbatch}</h2>
       <table class='table'>
         <thead>
           <tr>
@@ -978,16 +985,22 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
           </tr>
         </thead>
         <tbody>`;
+
     results.forEach(r => {
       xtable += `<tr>
         <td>
-          ${r.rider}<br>
+          <b>${r.rider}</b><br>
           ${r.emp_id}<br>
-          (${r.region || 'NO REGION'}, ${r.hub})
+          (${r.region || 'NO REGION'}, ${r.hub})<br>
+		  ${r.batch_file}
         </td>
         <td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}</b></td>
       </tr>`;
     });
+
+
+
+
     xtable += `
       <tr>
         <td align='right'><b>TOTAL :</b></td>
