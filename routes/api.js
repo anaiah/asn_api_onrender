@@ -826,9 +826,8 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 		FROM asn_spx_hubs a 
 		INNER JOIN asn_claims b 
 		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
-		WHERE b.emp_id = '138385'
-		${sqlins} 
-		AND (b.pdf_batch IS NULL OR b.pdf_batch = '')
+		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+ 		${sqlins} 
 		GROUP BY b.emp_id
 		ORDER BY total DESC LIMIT 5;`
 	}else{
