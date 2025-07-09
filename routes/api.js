@@ -128,7 +128,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 			a.email, GROUP_CONCAT(distinct a.region) as region, 
 			a.grp_id,a.pic 
 			from asn_users a 
-			WHERE a.email='?' and a.pwd='?';` 
+			WHERE a.email=? and a.pwd=?` 
 
 		const [data, fields] = await db.query(sql,[uid,pwd]);
 		
