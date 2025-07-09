@@ -984,7 +984,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		FROM asn_spx_hubs a 
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
-		and (b.pdf_batch is null or b.pdf_batch = '')
+		and (b.pdf_batch is not null or b.pdf_batch <> '')
 		GROUP BY b.hubs_location, b.emp_id
 		ORDER BY sum(b.amount) DESC`
 		
