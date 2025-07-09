@@ -973,6 +973,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 
 		visible = "disabled"
 
+		
 		sql=`SELECT b.full_name as rider, 
 		b.emp_id, 
 		b.hubs_location as hub, 
@@ -984,7 +985,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
 		and (b.pdf_batch is null or b.pdf_batch = '')
-		GROUP BY b.emp_id
+		GROUP BY b.hubs_location, b.emp_id
 		ORDER BY sum(b.amount) DESC`
 		
 	}
@@ -1056,7 +1057,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 					</tr>
 					<tr>
 					<td colspan=2>
-					<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+					<button id='download-btn' type='button' ${visible} class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
 					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="javascript:asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
 					</td>
 					</tr>
@@ -1433,20 +1434,23 @@ router.get('/createpdf/:e_num/:batch/:whois', async (req, res) => {
   }
   
   // Step 2: Fetch report data
-  const sql = `
-    SELECT emp_id,
-           full_name as rider,
-           category,
-           hubs_location as hub, 
-           track_number as track,
-           claims_reason as reason,
-           SUM(amount) as total,
-           pdf_batch
-    FROM asn_claims
-    WHERE emp_id = ? AND pdf_batch = ?
-    GROUP BY full_name, emp_id, category, hubs_location, track_number, claims_reason
-    ORDER BY full_name;
-  `;
+  sql=`SELECT b.full_name as rider, 
+		b.emp_id, 
+		b.category,
+		b.hubs_location as hub, 
+		a.region, 
+		coalesce(round(sum(b.amount),2),0) as total,
+		b.pdf_batch, 
+		b.track_number as track,
+		b.claims_reason as reason,
+		b.batch_file 
+		FROM asn_spx_hubs a 
+		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
+		WHERE b.emp_id = ? and b.pdf_batch = ?
+		and (b.pdf_batch is null or b.pdf_batch = '')
+		GROUP BY b.hubs_location, b.emp_id
+		ORDER BY sum(b.amount) DESC`
+
 
   try {
     const [results] = await db.query(sql, [e_num, batch]);
