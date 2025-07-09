@@ -595,7 +595,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
 		round(sum(a.amount)) as total
 		from asn_claims a
-		left join asn_spx_hubs b 
+		 join asn_spx_hubs b 
 		on b.hub = a.hubs_location
 		${sqlins}
 		where (a.pdf_batch is null or a.pdf_batch = "") 
