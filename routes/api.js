@@ -751,13 +751,14 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
                a.region, 
                COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
                b.pdf_batch, 
-               b.batch_file 
+               b.batch_file,
+			   b.transaction_year
         FROM asn_claims b 
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
 		${sqlIns}
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='2025'
-        GROUP BY b.hubs_location
+        GROUP BY b.hubs_location,b.full_name
         ORDER BY total DESC LIMIT 5;
       `;
     } else {
@@ -768,12 +769,13 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
                a.region, 
                COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
                b.pdf_batch, 
-               b.batch_file
+               b.batch_file,
+			   b.transaction_year
         FROM asn_claims b
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='2025'
-        GROUP BY b.hubs_location
+        GROUP BY b.hubs_location, b.full_name
         ORDER BY total DESC LIMIT 5;
       `;
     }
@@ -801,7 +803,8 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         <td>
           ${row.rider}<br>
           ${row.emp_id}<br>
-          (${row.region}, ${row.hub})
+          (${row.region}, ${row.hub})<br>
+		  ${row.transaction_year}
         </td>
         <td align='right' valign='bottom'><b>${addCommas(parseFloat(row.total).toFixed(2))}</b>&nbsp;&nbsp;&nbsp;&nbsp;</td>
       </tr>`;
@@ -922,7 +925,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
                a.region, 
                COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
                b.pdf_batch,
-               b.batch_file
+               b.batch_file,
+			   b.transaction_year
         FROM asn_claims b
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location ${sqlins}
         WHERE ${sqlzins}
@@ -939,7 +943,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
                a.region, 
                COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
                b.pdf_batch,
-               b.batch_file
+               b.batch_file,
+			   b.transaction_year
         FROM asn_claims b
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
         WHERE ${sqlzins}
@@ -992,7 +997,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
           <b>${r.rider}</b><br>
           ${r.emp_id}<br>
           (${r.region || 'NO REGION'}, ${r.hub})<br>
-		  ${r.batch_file}
+		  ${r.batch_file}<br>
+		  ${r.transaction_year}
         </td>
         <td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}</b></td>
       </tr>`;
