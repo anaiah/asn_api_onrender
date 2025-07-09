@@ -932,7 +932,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
         WHERE ${sqlzins}
           AND (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='2025'
-        GROUP BY b.hubs_location, b.full_name;
+        GROUP BY b.full_name, b.hubs_location
+		ORDER BY b.full_name;
       `;
     } else {
       // No region filter, show all
@@ -950,8 +951,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
         WHERE ${sqlzins}
           AND (b.pdf_batch IS NULL OR b.pdf_batch != '')
           AND b.transaction_year='2025'
-        GROUP BY b.hubs_location, b.full_name;
-      `;
+        GROUP BY b.full_name, b.hubs_location ;
+        ORDER BY b.full_name;`;
     }
 
     console.log('Processing:', sql);
@@ -963,10 +964,22 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
     }
 
     let totalAmt = 0;
-    results.forEach(r => {
+    
+	results.forEach(r => {
       r.total = parseFloat(r.total).toFixed(2);
       totalAmt += parseFloat(r.total);
     });
+
+	// Sort by:
+	results.sort((a, b) => {
+	// descending for total
+	if (b.total !== a.total) {
+		return b.total - a.total;
+	}
+	// ascending for emp_id
+	return a.emp_id.localeCompare(b.emp_id);
+	// add more criteria if needed
+	});
 
     const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
     const curr_date = strdates();
