@@ -658,26 +658,26 @@ router.get('/gethub/:region/:grpid/:email', async(req, res)=>{
 		}//endcase
 		
 		sql =`
-		 SELECT  
+		SELECT  
 		b.hubs_location AS hub, 
 		a.region, 
 		COALESCE(ROUND(SUM(b.amount),2),0) AS total
-		FROM asn_spx_hubs a 
-		INNER JOIN asn_claims b 
+		FROM asn_claims b 
+		LEFT JOIN  asn_spx_hubs a
 		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
 		${sqlins} 
 		GROUP BY b.hubs_location, a.region
 		ORDER BY total DESC LIMIT 5;`
-		
 			 
 	}else{
-		sql = ` SELECT  
+		sql = ` 
+		SELECT  
 		b.hubs_location AS hub, 
 		a.region, 
 		COALESCE(ROUND(SUM(b.amount),2),0) AS total
-		FROM asn_spx_hubs a 
-		INNER JOIN asn_claims b 
+		FROM asn_claims b 
+		LEFT JOIN asn_spx_hubs a 
 		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
 		GROUP BY b.hubs_location, a.region
@@ -768,8 +768,8 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 		COALESCE(ROUND(SUM(b.amount),2),0) AS total,
 		b.pdf_batch, 
 		b.batch_file 
-		FROM asn_spx_hubs a 
-		INNER JOIN asn_claims b 
+		FROM asn_claims b 
+		LEFT JOIN asn_spx_hubs a 
 		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
  		${sqlins} 
@@ -785,8 +785,8 @@ router.get('/getrider/:region/:grpid/:email', async(req, res)=>{
 		COALESCE(ROUND(SUM(b.amount),2),0) AS total,
 		b.pdf_batch, 
 		b.batch_file 
-		FROM asn_spx_hubs a 
-		INNER JOIN asn_claims b 
+		FROM asn_claims b 
+		LEFT JOIN asn_spx_hubs a 
 		ON a.hub = b.hubs_location AND b.transaction_year='2025' 
 		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
 		GROUP BY b.emp_id
@@ -961,8 +961,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		coalesce(round(sum(b.amount),2),0) as total,
 		b.pdf_batch, 
 		b.batch_file 
-		FROM asn_spx_hubs a 
-		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
+		FROM asn_claims b 
+		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
 		and (b.pdf_batch is null or b.pdf_batch = '')
 		${sqlins} 
@@ -972,7 +972,6 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 	}else{
 
 		visible = "disabled"
-
 		
 		sql=`SELECT b.full_name as rider, 
 		b.emp_id, 
@@ -981,8 +980,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
 		coalesce(round(sum(b.amount),2),0) as total,
 		b.pdf_batch, 
 		b.batch_file 
-		FROM asn_spx_hubs a 
-		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
+		FROM asn_claims b 
+		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location and b.transaction_year='2025' 
 		WHERE ${sqlzins} 
 		and (b.pdf_batch is not null or b.pdf_batch <> '')
 		GROUP BY b.hubs_location, b.emp_id
