@@ -127,7 +127,6 @@ let connectedSockets = []
 //listen socket.io
 io.on('connection', (socket) => {
 
-
     if(socket.handshake.query.userName){
 		const userNames = socket.handshake.query.userName
 		const userNamex = JSON.parse(userNames)

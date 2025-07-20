@@ -119,9 +119,8 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 
 //========login post
 router.get('/loginpost/:uid/:pwd',async(req,res)=>{
-    console.log('login=>',req.params.uid,req.params.pwd)
-    
-	
+    console.log('firing login=>',req.params.uid,req.params.pwd)
+    	
 	try {
 		const {uid,pwd} = req.params
 
@@ -132,6 +131,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 			WHERE a.email=? and a.pwd=?` 
 
 		const [data, fields] = await db.query(sql,[uid,pwd]);
+
 		//console.log(data[0])
 		if (data.length > 0) {
 			// record exists, proceed
@@ -166,13 +166,12 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 				voice   : "No Matching Record!",
 				found   : false
 			})  
-
-		}
+		}//eif
 
 	} catch (err) {
 		console.error('Error:', err);
 		res.status(500).send('Error occurred');
-	}
+	}//eif
 
    
 })//== end loginpost
@@ -190,10 +189,9 @@ router.post('/newemppost/', async (req, res) => {
 
 	myfile = req.body.employeeId
 	console.log('data is', req.body.fullName.toUpperCase(), req.body.birthDate , req.body.jobTitle)
-
 	
    	connectDb()
-    .then((db)=>{
+    .then((xdb)=>{
 
 	//$sql = `INSERT INTO asn_employees (emp_id, full_name, email, phone, birth_date, hire_date, job_title, department, employment_status, address) 
 	//VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`
@@ -224,7 +222,7 @@ router.post('/newemppost/', async (req, res) => {
 					status:true
 				})
 	
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
 			
 		})
 		
@@ -484,8 +482,8 @@ const drseq = () => {
 
 	const sqlu = "update dr_seq set sequence = sequence +1;"
 	connectDb()
-	.then((db)=>{
-		db.query(sqlu , null ,(error,results) => {	
+	.then((xdb)=>{
+		xdb.query(sqlu , null ,(error,results) => {	
 			//console.log('UPDATE DR SEQ', results)
 		})
 	})
@@ -539,12 +537,12 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 
 		console.log('==getprintpdf== ')
 		connectDb()
-		.then((db)=>{
-			db.query(sql,(error,results) => {	
+		.then((xdb)=>{
+			xdb.query(sql,(error,results) => {	
 				//console.log(error,results)
 				if ( results.length == 0) {   //data = array 
 					console.log('no rec')
-					closeDb(db);//CLOSE connection
+					closeDb(xdb);//CLOSE connection
 			
 					res.status(500).send({error:'NO RECORD'})
 			
@@ -552,7 +550,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 					
 					//xtable+=`<input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
 
-					closeDb(db);//CLOSE connection
+					closeDb(xdb);//CLOSE connection
 				
 					results.sort((a, b) => {
 						return a.pdf_batch - b.pdf_batch;
@@ -627,12 +625,12 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 	
 	//console.log(sql)
 	connectDb()
-	.then((db)=>{
-		db.query(sql,(error,result) => {	
+	.then((xdb)=>{
+		xdb.query(sql,(error,result) => {	
 			//console.log(error,results)
 			if ( result[0].length == 0) {   //data = array 
 				console.log('no rec')
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
 		
 				res.status(500).send('** No Record Yet! ***')
 		
@@ -640,7 +638,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 				
 				//xtable+=`<input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
 
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
 			
 				res.status(200).json(result)				
 				
@@ -697,7 +695,7 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
       `
     }
 
-    console.log('Top 5 Hub processing...', sql );
+    console.log('=======Top 5 Hub processing...', sql );
 
     // get connection from pool
     const [results] = await db.query(sql);
@@ -787,7 +785,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='2025'
-        GROUP BY b.hubs_location, b.full_name
+        GROUP by b.full_name, b.emp_id 		
         ORDER BY total DESC LIMIT 5;
       `;
     }
@@ -849,12 +847,12 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 	console.log(sql)
 	console.log('LIST OF ATDS FOR CROSSCHEK...')
 	connectDb()
-	.then((db)=>{
-		db.query(`${sql}`,(error,results) => {	
+	.then((xdb)=>{
+		xdb.query(`${sql}`,(error,results) => {	
 		
 			if ( results.length == 0) {   //data = array 
 				console.log('no rec')
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
 		
 				res.status(500).send('** No Record Yet! ***')
 		
@@ -890,7 +888,7 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 					</table>
 					</div>`
 
-					closeDb(db);//CLOSE connection
+					closeDb(xdb);//CLOSE connection
 		
 					res.status(200).send(xtable)				
 				
@@ -944,7 +942,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
         WHERE ${sqlzins}
           AND (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='2025'
-        GROUP BY b.full_name, b.hubs_location
+        GROUP BY b.emp_id, b.full_name
 		ORDER BY b.full_name;
       `;
     } else {
@@ -963,11 +961,11 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
         WHERE ${sqlzins}
           AND (b.pdf_batch IS NULL OR b.pdf_batch != '')
           AND b.transaction_year='2025'
-        GROUP BY b.full_name, b.hubs_location ;
+        GROUP BY b.emp_id,b.full_name  
         ORDER BY b.full_name;`;
     }
 
-    console.log('Processing:', sql);
+    console.log('===get Employee id/name Processing:', sql);
 
     // Use your existing db pool
     const [results] = await db.query(sql);
@@ -1128,14 +1126,14 @@ router.get('/xxxgetrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>
 	console.log( 'getrecord()===== Search Claims processing...',sql)
 	
 	connectDb()
-	.then((db)=>{
+	.then((xdb)=>{
 		db.query(`${sql}`,(error,results) => {	
 		     
 			console.log( results)
 
 			if ( !results ) {   //data = array 
 				console.log('no rec')
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
 		
 				res.status(500).send([])
 		
@@ -1200,11 +1198,11 @@ router.get('/xxxgetrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>
 					</table>
 					</div>` 
 
-					closeDb(db);//CLOSE connection
+					closeDb(xdb);//CLOSE connection
 		
 					res.status(200).send(xtable)
 				}else{
-					closeDb(db)
+					closeDb(xdb)
 					res.status(200).send('**No Record Found***')
 				}			
 				
@@ -1228,7 +1226,7 @@ router.get('/getlistpdf/:limit/:page', async(req,res) => {
 	let page = req.params.page
 	
 	connectDb() 
-	.then((db)=>{
+	.then((xdb)=>{
 		
 		let sql = `SELECT distinct(a.emp_id) as emp_id,
 		a.full_name as rider,
@@ -1368,7 +1366,7 @@ router.get('/getlistpdf/:limit/:page', async(req,res) => {
 							
 					aPage.length = 0 //reset array
 					
-					closeDb(db)
+					closeDb(xdb)
 
 					//console.log( main )
 					res.send(main) //output result
@@ -1391,7 +1389,7 @@ const pdfBatch =   ( emp_id ) =>{
 		let xcode, seq
 	
 		connectDb()
-		.then((db)=>{
+		.then((xdb)=>{
 			db.query(`${sql}`,(error,results) => {
 
 				//console.log('prev seq ', results)
@@ -1410,7 +1408,7 @@ const pdfBatch =   ( emp_id ) =>{
 					
 					//onsole.log('==inside pdfBatch()===',seq, xcode )
 					
-					closeDb(db)
+					closeDb(xdb)
 
 					//console.log(xcode)
 					resolve( xcode )
@@ -1470,7 +1468,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 			order by emp_id`
 
 			connectDb()
-			.then((db)=>{
+			.then((xdb)=>{
 				db.query(`${sql}`,(error,results) => {	
 					
 					console.log('checkpdf() ',sql, 'result ', results )
@@ -1478,7 +1476,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 					if(results.length > 0){
 						console.log('OK TO REPRINT, SENDING NOW...====')
 						
-						closeDb(db) //close
+						closeDb(xdb) //close
 						res.status(200).json({status:true, batch:`${results[0].pdf_batch}`})
 					}
 				})
@@ -1500,7 +1498,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 			order by emp_id`
 
 			connectDb()
-			.then((db)=>{
+			.then((xdb)=>{
 				db.query(`${sql}`, (error,results) => {	
 
 					console.log( '===checkpdf()===', sql,  results)
@@ -1508,7 +1506,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 					if(results.length > 0){
 						console.log('=====ERROR, PDF BATCH ALREADY CREATED!====')
 						
-						closeDb(db) //close
+						closeDb(xdb) //close
 
 						res.status(200).json({status:false, batch: results[0].pdf_batch})
 					}else{
@@ -1531,7 +1529,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 							console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD! BATCH->',seq)
 							
-							closeDb(db)
+							closeDb(xdb)
 							res.status(200).json({status:true, batch:`${seq}`})
 				
 						}).catch((error)=>{
@@ -1659,13 +1657,13 @@ router.get('/xxxcreatepdf/:e_num/:batch/:whois', async(req, res)=>{
 	console.log('==== createpdf() ==== ')
 
 	connectDb()
-	.then((db)=>{
+	.then((xdb)=>{
 		db.query(`${sql}`,(error,results) => {	
 		console.log( results )
 
 			if ( results.length == 0) {   //data = array 
 				console.log('no rec')
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
 		
 				res.status(500).send({error:'error'})
 		
@@ -1699,12 +1697,12 @@ router.get('/xxxcreatepdf/:e_num/:batch/:whois', async(req, res)=>{
 						if(err){
 							console.error('Error in Downloading ',reportfile,err)
 
-							closeDb(db)
+							closeDb(xdb)
 
 							res.status(500).send(`Error in Downloading ${reportfile}`)
 						}else{
 
-							closeDb(db)
+							closeDb(xdb)
 							console.log(req.params.batch , ' SUCCESS DOWNLOADED BY CLIENT')
 						}
 					}) //===end res.download
@@ -1730,7 +1728,7 @@ router.get('/deletepdf/:e_num', async(req, res) => {
 			console.log('*** Deleted temp file ', reportfile)
 			
 			//update patient record
-			//closeDb(db)
+			//closeDb(xdb)
 			res.status(200).json({status:true})
 
 		}//eif
@@ -1742,8 +1740,10 @@ router.get('/deletepdf/:e_num', async(req, res) => {
 //===test menu-submenu array->json--->
 router.get('/menu/:grpid', async(req,res)=>{
 	console.log('=== menu()')
+
+
 	connectDb()
-    .then((db)=>{ 
+    .then((xdb)=>{ 
 
 		sql2 = `SELECT menu,
 			menu_icon,
@@ -1757,7 +1757,7 @@ router.get('/menu/:grpid', async(req,res)=>{
 		//console.log(sql)
 		//console.log(sql2)
 
-		db.query( sql2 ,  (error, results)=>{
+		xdb.query( sql2 ,  (error, results)=>{
 			console.log( error,results )
 			res.status(200).json( results )
 		})
@@ -1799,13 +1799,13 @@ router.get( '/sendotp/:email/:name', async (req,res)=>{
 				WHERE email ='${req.params.email}' `
 			
 				connectDb()
-				.then((db)=>{
+				.then((xdb)=>{
 			
 					db.query(sqlu,(error,results) => {	
 						console.log('otp update==', sqlu, results.changedRows)
 					})
 					
-					closeDb(db);//CLOSE connection
+					closeDb(xdb);//CLOSE connection
 			
 
 				}).catch((error)=>{
@@ -1832,7 +1832,7 @@ router.get( '/sendotp/:email/:name', async (req,res)=>{
 router.get( '/getotp/:otp/:email', async (req,res)=>{
 	sql = `select private_key from vantaztic_users where email = '${req.params.email}'`
 	connectDb()
-	.then((db)=>{
+	.then((xdb)=>{
 
 		db.query(sql,null, (err,results) => {	
 			
@@ -1860,7 +1860,7 @@ router.get( '/getotp/:otp/:email', async (req,res)=>{
 			}
 		})
 		
-		closeDb(db);//CLOSE connection
+		closeDb(xdb);//CLOSE connection
 
 
 	}).catch((error)=>{
@@ -2072,7 +2072,7 @@ router.get('/getall/:type/:status',   async(req,res) => {
 	console.log(' ===/getall()/ MY SQL route api.js===')
 
 	connectDb()
-    .then((db)=>{
+    .then((xdb)=>{
         
         db.query( sql , null ,(err,data) => { 
 			
@@ -2083,7 +2083,7 @@ router.get('/getall/:type/:status',   async(req,res) => {
 					found:false
 				})  
 				
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
             
 			}else{
 				console.log('===rec ===', data.length)	
@@ -2182,7 +2182,7 @@ router.get('/getall/:type/:status',   async(req,res) => {
 						found	:	true
 					})
 				}
-                closeDb(db);//CLOSE connection
+                closeDb(xdb);//CLOSE connection
                 
             }//EIF
 			
@@ -2201,7 +2201,7 @@ router.get('/fetchinitdata',   async(req,res) => {
 	res.clearCookie(`Sales`, {path : '/'})
 
 	connectDb()
-    .then((db)=>{
+    .then((xdb)=>{
 
 		// Select distinct( b.approve_status  ) as 'status',
 		// count(a.status)  as status_count,
@@ -2250,7 +2250,7 @@ router.get('/fetchinitdata',   async(req,res) => {
 					found:false
 				})  
 				
-				closeDb(db);//CLOSE connection
+				closeDb(xdb);//CLOSE connection
                 //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
 
             }else{ 
@@ -2264,7 +2264,7 @@ router.get('/fetchinitdata',   async(req,res) => {
 					result	: 	data
                 })
 				
-                closeDb(db);//CLOSE connection
+                closeDb(xdb);//CLOSE connection
                 //console.log("===MYSQL CONNECTON CLOSED SUCCESSFULLY===")
             }//EIF
 			
@@ -2306,7 +2306,7 @@ router.get('/q/:limit/:page',  async(req,res) => {
 	let page = req.params.page
 	
 	connectDb()
-	.then((db)=>{
+	.then((xdb)=>{
 		
 		sql1 = `select * from equipment_client`
 							
