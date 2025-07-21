@@ -595,8 +595,8 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 		from asn_claims a
 		 join asn_spx_hubs b 
 		on b.hub = a.hubs_location
-		${sqlins}
 		where (a.pdf_batch is null or a.pdf_batch = "") 
+		${sqlins}
 		and a.transaction_year='2025'
 		group by a.uploaded_at
         order by a.uploaded_at DESC`
