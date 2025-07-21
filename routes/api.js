@@ -514,8 +514,9 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			b.region,
 			a.pdf_batch
 			from asn_claims a 
-			left join asn_spx_hubs b on a.hubs_location = b.hub ${sqlins} 
+			left join asn_spx_hubs b on a.hubs_location = b.hub  
 			where a.pdf_batch like 'ASN%' 
+			${sqlins}
 			and a.transaction_year='2025' 
 			group by a.pdf_batch
 			order by a.pdf_batch+0 desc;`
