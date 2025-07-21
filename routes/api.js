@@ -1469,9 +1469,12 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 			and transaction_year = '2025'
 			order by emp_id`
 
+			console.log('checkpdf() ',sql)
+
+
 			connectDb()
 			.then((xdb)=>{
-				db.query(`${sql}`,(error,results) => {	
+				xdb.query(`${sql}`,(error,results) => {	
 					
 					console.log('checkpdf() ',sql, 'result ', results )
 							
@@ -1501,7 +1504,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 			connectDb()
 			.then((xdb)=>{
-				db.query(`${sql}`, (error,results) => {	
+				xdb.query(`${sql}`, (error,results) => {	
 
 					console.log( '===checkpdf()===', sql,  results)
 					
@@ -1524,7 +1527,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 				
 							/////console.log('inside Promise of pdfBatch()' , sql2)	
 
-							db.query(sql2, null, (error,xdata) => {
+							xdb.query(sql2, null, (error,xdata) => {
 								//////console.log('UPDATE PDF BATCH==', xdata )
 								//////console.log(xdata) xdata.affectedRows or changedRows
 							})
