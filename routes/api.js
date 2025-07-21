@@ -674,9 +674,9 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
           COALESCE(ROUND(SUM(b.amount),2),0) AS total
         FROM asn_claims b 
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
-		${sqlIns}
-        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-          AND b.transaction_year='2025'
+		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+        ${sqlIns}  
+		AND b.transaction_year='2025'
         GROUP BY b.hubs_location, a.region
         ORDER BY total DESC LIMIT 5;
       `
@@ -765,10 +765,10 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
 			   b.transaction_year
         FROM asn_claims b 
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
-		${sqlIns}
-        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-          AND b.transaction_year='2025'
-        GROUP BY b.hubs_location,b.full_name
+		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+        ${sqlIns}
+        AND b.transaction_year='2025'
+        GROUP BY b.full_name,b.emp_id
         ORDER BY total DESC LIMIT 5;
       `;
     } else {
@@ -789,6 +789,8 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         ORDER BY total DESC LIMIT 5;
       `;
     }
+	
+	console.log('=======Top 5 Rider processing...', sql );
 
     // Simply use db.query() because `db` is already your pool object
     const [results] = await db.query(sql);
