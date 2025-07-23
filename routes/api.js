@@ -1393,7 +1393,7 @@ const pdfBatch =   ( emp_id ) =>{
 	
 		connectDb()
 		.then((xdb)=>{
-			db.query(`${sql}`,(error,results) => {
+			xdb.query(`${sql}`,(error,results) => {
 
 				//console.log('prev seq ', results)
 
@@ -1404,7 +1404,7 @@ const pdfBatch =   ( emp_id ) =>{
 					//console.log( seq.toString().padStart(5,"0") )
 					const usql = `update asn_pdf_sequence set sequence = ${seq}`
 					
-					db.query(`${usql}`,(error,udata) => {
+					xdb.query(`${usql}`,(error,udata) => {
 					})
 	
 					xcode =`ASN-${seq.toString().padStart(5,"0")}`
@@ -1493,7 +1493,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
 		break;
 
-		default:
+		case "6": //head coord
 
 			//for the headd coord/ coord to download 
 			// a blank atd pdf
@@ -1518,6 +1518,7 @@ router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 					}else{
 
 						//==================SEQUENCE==================//
+						console.log('REPRINTING PDF BATCH, CREATING NEW BATCH...')
 						pdfBatch( req.params.e_num)
 						.then( seq => {
 							
