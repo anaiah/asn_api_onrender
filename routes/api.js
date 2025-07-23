@@ -958,9 +958,11 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
                COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
                b.pdf_batch,
                b.batch_file,
-			   b.transaction_year
+			   b.transaction_year,
+			   c.full_name as downloaded_by
         FROM asn_claims b
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+		join asn_users c on c.id = b.download_empid
         WHERE ${sqlzins}
           AND (b.pdf_batch IS NULL OR b.pdf_batch != '')
           AND b.transaction_year='2025'
@@ -999,7 +1001,8 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
 	let xpdfbatch
 
 	if( results[0].pdf_batch!==null ){
-		xpdfbatch = "ATD # " + results[0].pdf_batch
+		xpdfbatch = 	`ATD # ${results[0].pdf_batch}<br>
+		Downloaded by: ${results[0].downloaded_by}`
 	}else{
 		xpdfbatch = "ATD PDF NOT YET PROCESSED"
 	}
