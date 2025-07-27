@@ -1498,7 +1498,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 						console.error(`Error updating download_empid: ${batch}`, err);
 						return res.status(500).json({ error: `Failed to update download_empid ${batch}` });
 					}
-					
+	 				
 					//============ force download
 
 					res.download(fullFilePath, (err) => {  // Use fullFilePath and reportfile name
