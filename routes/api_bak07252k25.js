@@ -915,182 +915,330 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 
 //============search by id or name
 router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => {
-	const { enum: emp_id, ename, region, grpid, email } = req.params;
+  const { enum: emp_id, ename, region, grpid, email } = req.params;
+  let sqlins = '';
+  let sqlzins = '';
 
-	let sqlins = '';
-	let sqlzins = '';
+  // Build search condition
+  if (ename !== 'blank' && emp_id !== 'blank') {
+    sqlzins = `(b.emp_id LIKE '%${emp_id}%' OR UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%')`;
+  } else if (emp_id !== 'blank') {
+    sqlzins = `b.emp_id = '${emp_id}'`;
+  } else if (ename !== 'blank') {
+    sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
+  }
 
-	// Build search condition
-	if (ename !== 'blank' && emp_id !== 'blank') {
-		sqlzins = `(b.emp_id LIKE '%${emp_id}%' OR UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%')`;
-	} else if (emp_id !== 'blank') {
-		sqlzins = `b.emp_id = '${emp_id}'`;
-	} else if (ename !== 'blank') {
-		sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
-	}
+  try {
+    // Build conditional SQL for region and group
+    if (region !== 'ALL') {
+      switch (grpid) {
+        case '6': // head coord
+          sqlins = ` AND a.head_coordinator_email = '${email}' `;
+          break;
+        case '7': // coord
+          sqlins = ` AND a.coordinator_email = '${email}' `;
+          break;
+      }
 
-	try {
-		// Build conditional SQL for region and group
-		if (region !== 'ALL') {
-		switch (grpid) {
-			case '6': // head coord
-			sqlins = ` AND a.head_coordinator_email = '${email}' `;
-			break;
-			case '7': // coord
-			sqlins = ` AND a.coordinator_email = '${email}' `;
-			break;
-		}
-
-		var sql = `
-		SELECT 
+      var sql = `
+        SELECT b.id,
+               b.full_name AS rider, 
+               b.emp_id, 
+               b.hubs_location AS hub, 
+               a.region, 
+               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+               b.pdf_batch,
+               b.batch_file,
+			   b.transaction_year
+        FROM asn_claims b
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location ${sqlins}
+        WHERE ${sqlzins}
+          AND (b.pdf_batch IS NULL OR b.pdf_batch = '')
+          AND b.transaction_year='2025'
+        GROUP BY b.emp_id, b.full_name
+		ORDER BY b.full_name;
+      `;
+    } else {
+      // No region filter, show all
+      var sql = `
+        SELECT 
 				b.id,
 				b.full_name AS rider, 
-				b.emp_id, 
-				b.hubs_location AS hub, 
-				a.region, 
-				count(b.id) as id_count,
-				COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-				b.pdf_batch,
-				b.batch_file,
-				b.transaction_year,
-				c.full_name as downloaded_by
-			FROM asn_claims b
-			LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-			left join asn_users c on c.id = b.download_empid
-			WHERE ${sqlzins}
-				${sqlins}
-				AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
-				AND b.transaction_year='2025'
-			GROUP BY b.emp_id,b.full_name,b.pdf_batch  
-			ORDER BY b.emp_id, b.full_name;`;
+               b.emp_id, 
+               b.hubs_location AS hub, 
+               a.region, 
+               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+               b.pdf_batch,
+               b.batch_file,
+			   b.transaction_year,
+			   c.full_name as downloaded_by
+        FROM asn_claims b
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+		left join asn_users c on c.id = b.download_empid
+        WHERE ${sqlzins}
+          AND (b.pdf_batch IS NULL OR b.pdf_batch != '')
+          AND b.transaction_year='2025'
+        GROUP BY b.emp_id,b.full_name  
+        ORDER BY b.full_name;`;
+    }
 
-		} else {
+    console.log('===get Employee id/name Processing:', sql);
 
-		// No region filter, show all SUPER-USERS here 
-		var sql = `
-			SELECT 
-				b.id,
-				b.full_name AS rider, 
-				b.emp_id, 
-				b.hubs_location AS hub, 
-				a.region, 
-				count(b.id) as id_count,
-				COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-				b.pdf_batch,
-				b.batch_file,
-				b.transaction_year,
-				c.full_name as downloaded_by
-			FROM asn_claims b
-			LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-			left join asn_users c on c.id = b.download_empid
-			WHERE ${sqlzins}
-				AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
-				AND b.transaction_year='2025'
-			GROUP BY b.emp_id,b.full_name,b.pdf_batch  
-			ORDER BY b.emp_id, b.full_name;`;
-		}
+    // Use your existing db pool
+    const [results] = await db.query(sql);
+    if (!results || results.length === 0) {
+      return res.status(200).send('**No Record Found***');
+    }
 
-		console.log('===get Employee id/name Processing:', sql);
+    let totalAmt = 0;
+    
+	results.forEach(r => {
+      r.total = parseFloat(r.total).toFixed(2);
+      totalAmt += parseFloat(r.total);
+    });
 
-		// Use your existing db pool
-		const [results] = await db.query(sql);
-
-		if (!results || results.length === 0) {
-			return res.status(200).send('**No Record Found***');
-		}
-
-		let totalAmt = 0;
-		
-		results.forEach(r => {
-			r.total = parseFloat(r.total).toFixed(2);
-			totalAmt += parseFloat(r.total);
-		});
-
-		/**** take out sorting of totals
-		// Sort by:
-		results.sort((a, b) => {
-		// descending for total
-		if (b.total !== a.total) {
-			return b.total - a.total;
-		}
-		// ascending for emp_id
-		return a.emp_id.localeCompare(b.emp_id);
-		// add more criteria if needed
-		});
-		****/ 
-		const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
-		const curr_date = strdates();
-		let xpdfbatch, xpdfbutton;
-		
-		// Build the HTML table for output
-		let xtable = `
-		<h2>(${region.toUpperCase()})</h2>
-		<table class='table' width='60%'>
-			<thead>
-			<tr>
-				<th>Rider</th>
-				<th align='right'>Amount</th>
-			</tr>
-			</thead>
-			<tbody>`;
-
-		results.forEach(r => {
-
-			if( r.pdf_batch!==null ){
-
-				xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
-				Downloaded by: ${(r.downloaded_by==null?'NO ID':r.downloaded_by)}`
-				xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}')" class='btn btn-primary btn-sm'>Re-Print ${r.pdf_batch}</a>`
-
-						
-			}else{
-				xpdfbatch = "ATD PDF NOT YET PROCESSED"	
-				xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-primary btn-sm'>Add to Print</a>`
-			}//eif
-
-			xtable += `<tr>
-				<td>
-				Rec# ${r.id}<br>
-				Rec Count: ${r.id_count}<br>
-				<b>${r.rider.toUpperCase()}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
-				${r.emp_id}<br>
-				(${r.region || 'NO REGION'}, ${r.hub})<br>
-				${r.batch_file}<br>
-				${r.transaction_year}<br>
-				<span style='color:red'>${xpdfbatch}</span><br>
-				${xpdfbutton}&nbsp;
-				
-				</td>
-				<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}</b></td>
-			</tr>`;
-		});// ===end results.forEach
-
-
-
-		xtable += `
-			<tr>
-				<td align='right'><b>TOTAL :</b></td>
-				<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}</b></td>
-			</tr>
-			<tr>
-				<td colspan='2'>
-				<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
-					<!-- Continuation from previous code snippet -->
-				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
-				</td>
-			</tr>
-			</tbody>
-			</table>
-			`;
-
-		// Send the constructed HTML as response
-		res.status(200).send(xtable);
-	} catch (err) {
-		console.error('Error processing request:', err);
-		res.status(500).json({ error: 'Error' });
+	// Sort by:
+	results.sort((a, b) => {
+	// descending for total
+	if (b.total !== a.total) {
+		return b.total - a.total;
 	}
+	// ascending for emp_id
+	return a.emp_id.localeCompare(b.emp_id);
+	// add more criteria if needed
+	});
+
+    const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
+    const curr_date = strdates();
+	let xpdfbatch
+
+	
+	
+    // Build the HTML table for output
+    let xtable = `
+	  <h2>(${region.toUpperCase()})</h2>
+      <table class='table' width='60%'>
+        <thead>
+          <tr>
+            <th>Rider</th>
+            <th align='right'>Amount</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    results.forEach(r => {
+
+		if( r.pdf_batch!==null ){
+			xpdfbatch = 	`ATD # ${results[0].pdf_batch}<br>
+			Downloaded by: ${r.downloaded_by}`
+		}else{
+			xpdfbatch = "ATD PDF NOT YET PROCESSED"
+		}
+
+      xtable += `<tr>
+        <td>
+		  Rec# ${r.id}<br>
+          <b>${r.rider}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
+          ${r.emp_id}<br>
+          (${r.region || 'NO REGION'}, ${r.hub})<br>
+		  ${r.batch_file}<br>
+		  ${r.transaction_year}<br>
+		  <span style='color:red'>${xpdfbatch}</span><br>
+
+		  <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}')" class='btn btn-primary btn-sm'>Add to Print</a>
+        </td>
+        <td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}</b></td>
+      </tr>`;
+    });
+
+
+    xtable += `
+      <tr>
+        <td align='right'><b>TOTAL :</b></td>
+        <td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}</b></td>
+      </tr>
+      <tr>
+        <td colspan='2'>
+          <button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+			<!-- Continuation from previous code snippet -->
+          <button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
+        </td>
+      </tr>
+    </tbody>
+    </table>
+    `;
+
+    // Send the constructed HTML as response
+    res.status(200).send(xtable);
+  } catch (err) {
+    console.error('Error processing request:', err);
+    res.status(500).json({ error: 'Error' });
+  }
 });
 
+
+// router.get('/xxxgetrecord/:enum/:ename/:region/:grpid/:email', async(req, res)=>{
+// 	let sqlzins, sqlins
+	
+// 	if ( req.params.ename!=="blank" &&  req.params.enum!== "blank"){
+// 		sqlzins = ` ( b.emp_id like '%${req.params.enum}%' or upper(b.full_name) like '%${req.params.ename.toUpperCase()}%')`
+		
+//  	}else if( req.params.enum!== "blank"  &&  req.params.ename == "blank"){
+// 		sqlzins = ` b.emp_id = '${req.params.enum}' `
+		
+// 	}else if ( req.params.ename!=="blank"  &&  req.params.enum == "blank"){
+// 		sqlzins = ` upper(b.full_name) like '%${req.params.ename.toUpperCase()}%' `
+
+// 	}//eif
+
+// 	let visible
+
+// 	if( req.params.region!=='ALL'){
+// 		switch( req.params.grpid){
+// 			case "6": //head coord
+// 				sqlins = ` and a.head_coordinator_email = '${req.params.email}' `
+// 			break
+
+// 			case "7": //coord
+// 				sqlins = ` and a.coordinator_email = '${req.params.email}' `
+// 			break
+
+// 		}//endcase
+		
+// 		visible=""
+
+// 		sql=`SELECT b.full_name as rider, 
+// 		b.emp_id, 
+// 		b.hubs_location as hub, 
+// 		a.region, 
+// 		coalesce(round(sum(b.amount),2),0) as total,
+// 		b.pdf_batch, 
+// 		b.batch_file 
+// 		FROM asn_claims b 
+// 		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location  
+// 		${sqlins} 
+// 		WHERE ${sqlzins} 
+// 		and (b.pdf_batch is null or b.pdf_batch = '')
+// 		and b.transaction_year='2025'
+// 		GROUP BY b.hubs_location
+// 		ORDER BY total DESC`
+
+// 	}else{
+// 		//===if the one opeing is grp 2, 3 admins, show all with pdf batch only to reprint 
+
+// 		visible = "disabled"
+		
+// 		sql=`SELECT b.full_name as rider, 
+// 		b.emp_id, 
+// 		b.hubs_location as hub, 
+// 		a.region, 
+// 		coalesce(round(sum(b.amount),2),0) as total,
+// 		b.pdf_batch, 
+// 		b.batch_file 
+// 		FROM asn_claims b 
+// 		LEFT JOIN asn_spx_hubs a on a.hub = b.hubs_location  
+// 		WHERE ${sqlzins} 
+// 		and (b.pdf_batch is not null or b.pdf_batch <> '')
+// 		and b.transaction_year='2025'
+// 		GROUP BY b.hubs_location
+// 		ORDER BY total DESC`
+		
+// 	}
+
+// 	console.log( 'getrecord()===== Search Claims processing...',sql)
+	
+// 	connectDb()
+// 	.then((xdb)=>{
+// 		db.query(`${sql}`,(error,results) => {	
+		     
+// 			console.log( results)
+
+// 			if ( !results ) {   //data = array 
+// 				console.log('no rec')
+// 				closeDb(xdb);//CLOSE connection
+		
+// 				res.status(500).send([])
+		
+// 			}else{ 
+			
+// 				if(results.length>0){
+// 					let xpdfbatch
+// 					//console.log('dito',sql)
+// 					console.log,(sql, 'getrecord ', results)
+
+					
+// 					if( results[0].pdf_batch!==null ){
+// 						xpdfbatch = "ATD # " + results[0].pdf_batch
+// 					}else{
+// 						xpdfbatch = "ATD PDF NOT YET PROCESSED"
+// 					}
+// 					let xtable = 
+// 					`<div class="col-lg-8">
+// 						<div class='ms-2'><H2 style="color:#dc4e41">${xpdfbatch}</H2></div>
+// 					<table class="table w-100	" > 
+// 					<thead>
+// 						<tr>
+// 						<th>Rider</th>
+// 						<th align=right>Amount</th>
+// 						</tr>
+// 					</thead>
+// 					<tbody>`
+
+// 					//iterate top 10
+// 					let total_amt = 0
+// 					for(let zkey in results){
+// 						total_amt+=parseFloat(results[zkey].total)
+
+// 						xtable+= `<tr>
+// 						<td>
+// 						<span class='a2'>${results[zkey].rider}</span><br>
+// 						<span class='a3'>${results[zkey].emp_id}</span><br>
+// 						<span class='a3'>${results[zkey].hub}</span><br>
+// 						<span class='a3'>Batch # ${results[zkey].batch_file}</span>
+						
+// 						</td>
+// 						<td align='right' valign='bottom'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
+// 						</tr>`
+
+// 					}//endfor
+					
+
+// 					//TAKE OUT <button id='download-btn' type='button' ${visible} ==== JULY 08, 2025 EDITED ************
+// 					xtable+=
+
+// 					`<tr>
+// 					<td  align=right><b>TOTAL : </b></td>
+// 					<td align=right><b> ${addCommas(parseFloat(total_amt).toFixed(2))}</b></td>
+// 					</tr>
+// 					<tr>
+// 					<td colspan=2>
+// 					<button id='download-btn' type='button' class='btn btn-primary' onclick="javascript:asn.checkpdf('${results[0].emp_id}')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+// 					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="javascript:asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
+// 					</td>
+// 					</tr>
+// 					</tbody>
+// 					</table>
+// 					</div>` 
+
+// 					closeDb(xdb);//CLOSE connection
+		
+// 					res.status(200).send(xtable)
+// 				}else{
+// 					closeDb(xdb)
+// 					res.status(200).send('**No Record Found***')
+// 				}			
+				
+// 			}//eif
+		
+// 		})
+
+// 	}).catch((error)=>{
+// 		res.status(500).json({error:'Error'})
+// 	}) 
+
+// })
+
+//=====https://localhost:3000/q/6/2 
 
 router.get('/getlistpdf/:limit/:page', async(req,res) => {
 	
@@ -1257,10 +1405,8 @@ router.get('/getlistpdf/:limit/:page', async(req,res) => {
 
 })//end pagination
 
-//=====function to get pdf batch number
-//this is used to get the next pdf batch number
 
-const pdfBatch =   () =>{
+const pdfBatch =   ( emp_id ) =>{
 	return new Promise((resolve, reject)=> {
 		const sql = `Select sequence from asn_pdf_sequence;`
 		let xcode, seq
@@ -1268,6 +1414,9 @@ const pdfBatch =   () =>{
 		connectDb()
 		.then((xdb)=>{
 			xdb.query(`${sql}`,(error,results) => {
+
+				//console.log('prev seq ', results)
+
 
 				if(results.length > 0){
 					
@@ -1298,256 +1447,139 @@ const pdfBatch =   () =>{
 	})
 
 
+	 
+	/*
+		var today = new Date()
+    var dd = String(today.getDate()).padStart(2, '0')
+    var mm = String(today.getMonth() + 1).padStart(2, '0') //January is 0!
+    var yyyy = today.getFullYear()
+    var hh = String( today.getHours()).padStart(2,'0')
+    var mmm = String( today.getMinutes()).padStart(2,'0')
+    var ss = String( today.getSeconds()).padStart(2,'0')
+
+    today = `ASN-${yyyy}${mm}${dd}${hh}${mmm}${ss}-${emp_id}`
+    return today
+	*/
+	
 }
 
-router.get('/getbatch', async(req,res)=>{
+router.get('/pdfx', async(req,res)=>{
 	
-	 let xxx =  await pdfBatch()
-	console.log('getting batch',xxx)
-	res.status(200).json({batch:xxx})
+	 let xxx =  await pdfBatch('205214')
+	console.log('serial',xxx)
+	res.status(200).json({status:'ok'})
 })
 
 
-
 //======= CHECK PDF FIRST BEFORE CREATING ==============
-router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
+router.get('/checkpdf/:e_num/:grp_id', async(req, res)=>{
 
-	const {grp_id, whois, batch, xbatch} = req.params;
+	console.log('CHECKPDF()===',req.params.grp_id)
+	switch ( req.params.grp_id ){
 
-	console.log('printPDF()===', batch,xbatch, whois, grp_id)
+		//these group are designed just to REPRINT  the PDF
+		//and NOT TO PRODUCE A  new one
+		case "2": //jenelle
+		case "3": //april
+		case "4": //admin / head admin
+		case "5": //admin / head admin
 
-	try{
+			sql = `Select emp_id,pdf_batch from asn_claims
+			where emp_id='${req.params.e_num}'
+			and ( pdf_batch <> "" or pdf_batch is not null )
+			and transaction_year = '2025'
+			order by emp_id`
 
-		//**************************if blank batch this is fresh print
-		//******************************* FOR NEW RECORDS ****************************** */
-		if(xbatch==="" || xbatch === 'undefined' || xbatch === null || xbatch === 'new') {
-
-			const myObjects = req.body.myObjects
-
-			if(!Array.isArray(myObjects) || myObjects.length === 0) {
-				return res.status(400).json({ error: 'Invalid input data' });
-			}
-
-			// Build the WHERE clause dynamically and prepare the values for the query
-			let conditions = [];
-			let updateconditions = [];
-			let values = [];
-
-			for (const obj of myObjects) {
-				if (obj.name && obj.empid) { // Validate that both properties exist
-					conditions.push('(full_name = ? AND emp_id = ?)');
-					updateconditions.push(`(full_name = '${obj.name}' and emp_id = '${obj.empid}')`); // Prepare for update
-					values.push(obj.name, obj.empid); // Add the values in the correct order
-				} else {
-					console.warn("Skipping object with missing name or id:", obj);
-				}
-			}
-
-			//Combine the conditions with OR
-			let whereClause = conditions.length > 0 ? conditions.join(' OR ') : '1=0';  // If conditions is empty return 1=0 which will always return nothing
-
-			//whereClause += ` AND (pdf_batch is null or pdf_batch = "") AND transaction_year = '2025'`; // Add the transaction year condition
-			// Build the complete SQL query
-			let sql = `
-				SELECT
-				emp_id,
-				full_name as rider,
-				category,
-				hubs_location as hub, 
-				track_number as track,
-				claims_reason as reason,
-				round(SUM(amount),2) as total,
-				pdf_batch
-				FROM asn_claims WHERE ${whereClause}
-				GROUP BY emp_id, full_name,pdf_batch`; // Use parameterized query
-				
-			// Execute the query
-			const [rows, fields] = await db.query(sql, values );// Pass values as an array
-
-			const newbatch = batch; // Get the new batch number	
-			//console.log( sql, newbatch, rows)
-
-			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE ${updateconditions.join(' OR ')}`; // Use the update conditions
-			console.log('==UPDATING ==', newbatch )
-			
-			// // Step 1: Update download_empid with whois
-			try {
-				await db.query( sql2,[whois, newbatch]);
-			} catch (err) {
-				console.error(`Error updating ${newbatch}:`, err);
-				return res.status(500).json({ error: `Failed to update for batch ${newbatch}` });
-			}
-
-			let total_amt = 0;
-
-			rows.forEach(r => {
-				r.total = parseFloat(r.total).toFixed(2);
-				total_amt += parseFloat(r.total);
-			});
-
-			const totalFormatted = addCommas(parseFloat(total_amt).toFixed(2));
-			const totalFixed = parseFloat(total_amt).toFixed(2);
-			const curr_date = strdates();
-			
-			//=== CREATE PDF ===========
-			asnpdf.reportpdf( rows, curr_date, totalFormatted, totalFixed, newbatch)
-			.then(  reportfile =>{
-
-				console.log('==REPORT PDF SUCCESS!===', reportfile)
-
-				// *******************Download PDF******************************
-				const pdfDirectory = path.join(__dirname, '..'); //Correct // Go up one level to the project root
-				const fullFilePath = path.join(pdfDirectory, reportfile);  // Create the full path
-				const reportfileName = 'http://10.202.213.221:10020/' + path.basename(reportfile); // Get the file name from the path
+			console.log('checkpdf() ',sql)
 
 
-				console.log("Full PDF Path:", fullFilePath, reportfileName);  // Check the full path!
+			connectDb()
+			.then((xdb)=>{
+				xdb.query(`${sql}`,(error,results) => {	
+					
+					console.log('checkpdf() ',sql, 'result ', results )
+							
+					if(results.length > 0){
+						console.log('OK TO REPRINT, SENDING NOW...====')
+						
+						closeDb(xdb) //close
+						res.status(200).json({status:true, batch:`${results[0].pdf_batch}`})
+					}
+				})
 
-				console.log('=====update val', values)
+			}).catch((error)=>{
+				res.status(500).json({error:'Error'})
+			}) 
 
-				//============ force download
+		break;
 
-				res.download(fullFilePath, (err) => {  // Use fullFilePath and reportfile name
-					if (err) {
-						console.error('Error in Downloading',  err);
-						// Optionally, handle cleanup if needed
-						return res.status(500).send(`Error in Downloading ${reportfile}`);
+		case "6": //head coord
+			//for the head	 coord/ coord to download 
+			// a blank atd pdf
+			sql = `Select emp_id,pdf_batch from asn_claims
+			where emp_id='${req.params.e_num}' 
+			and ( pdf_batch <> "" or pdf_batch is not null ) 
+			and transaction_year = '2025'
+			order by emp_id`
+
+			connectDb()
+			.then((xdb)=>{
+				xdb.query(`${sql}`, (error,results) => {	
+
+					console.log( '===checkpdf()===', sql,  results)
+					
+					if(results.length > 0){
+						console.log('=====ERROR, PDF BATCH ALREADY CREATED!====')
+						
+						closeDb(xdb) //close
+
+						res.status(200).json({status:false, batch: results[0].pdf_batch})
 					}else{
-						
-						console.log('Successfully downloaded NEW FILE :', fullFilePath);
-						
-						fs.unlink(fullFilePath, (unlinkerr) => {
-							if (unlinkerr) {
-								console.error('Error deleting temporary file:', unlinkerr);
-							} else {
-								console.log('Successfully deleted temporary NEW FILE:', fullFilePath);
-							}
-						});
-						
 
-					}
-					
-				});
-
+						//==================SEQUENCE==================//
+						console.log('REPRINTING PDF BATCH, CREATING NEW BATCH...')
+						pdfBatch( req.params.e_num)
+						.then( seq => {
+							
+							const sql2 = `UPDATE asn_claims SET pdf_batch ='${seq}'
+							where emp_id='${req.params.e_num}' 
+							and transaction_year='2025' 
+							and ( pdf_batch is null or pdf_batch = '' )`
 				
+							/////console.log('inside Promise of pdfBatch()' , sql2)	
+
+							xdb.query(sql2, null, (error,xdata) => {
+								//////console.log('UPDATE PDF BATCH==', xdata )
+								//////console.log(xdata) xdata.affectedRows or changedRows
+							})
+
+							console.log('UPDATED DATABASE WITH PDFBATCH() GOOD TO DOWNLOAD! BATCH->',seq)
+							
+							closeDb(xdb)
+							res.status(200).json({status:true, batch:`${seq}`})
+				
+						}).catch((error)=>{
+							res.status(500).json({error:'Error'})
+						})
+						
+					}
+				})
+
+			}).catch((error)=>{
+				res.status(500).json({error:'Error'})
 			})
+		break;
 
-			
-			//******************END DOWNLOAD ******************* */
-				
-
-		}else{
-			//************ REPRINT WITH BATCH FILE EXISTING ***************** */
-			// If batch is defined, fetch records for the given emp_id and pdf_batch
-			console.log('==REPRINT / NEW BATCH ==', batch, whois)
-			const sql = `
-				SELECT emp_id,
-						emp_id,
-					full_name as rider,
-					category,
-					hubs_location as hub, 
-					track_number as track,
-					claims_reason as reason,
-					round(SUM(amount),2) as total,
-					pdf_batch
-				FROM asn_claims
-				WHERE pdf_batch = ? 
-				GROUP BY emp_id, full_name,pdf_batch
-				ORDER BY full_name;`;
-
-			try {
-				const [rows] = await db.query(sql, [ batch]);
-
-				if (rows.length === 0) {
-					return res.status(404).json({ error: 'No records found' });
-				}
-
-				
-
-
-				let total_amt = 0;
-				
-				rows.forEach(r => {
-					r.total = parseFloat(r.total).toFixed(2);
-					total_amt += parseFloat(r.total);
-				});
-
-				const totalFormatted = addCommas(parseFloat(total_amt).toFixed(2));
-				const totalFixed = parseFloat(total_amt).toFixed(2);
-				const curr_date = strdates();
-
-				//=== CREATE PDF ===========
-				asnpdf.reportpdf( rows, curr_date, totalFormatted, totalFixed, batch)
-				.then( async reportfile =>{
-
-					console.log('==REPORT PDF SUCCESS!===', reportfile)
-
-					// *******************Download PDF******************************
-					const pdfDirectory = path.join(__dirname, '..'); //Correct // Go up one level to the project root
-					const fullFilePath = path.join(pdfDirectory, reportfile);  // Create the full path
-
-					console.log("Full PDF Path:", fullFilePath);  // Check the full path!
-
-					let sql2 = 	`UPDATE asn_claims SET download_empid = ?  WHERE pdf_batch = ?`; // Use the update conditions
-					console.log('==UPDATING==', batch )
-					
-					// Step 1: Update download_empid with whois
-					try {
-						await db.query( sql2,[whois, batch]);
-					} catch (err) {
-						console.error(`Error updating download_empid: ${batch}`, err);
-						return res.status(500).json({ error: `Failed to update download_empid ${batch}` });
-					}
-					
-					//============ force download
-
-					res.download(fullFilePath, (err) => {  // Use fullFilePath and reportfile name
-						if (err) {
-							console.error('Error in Downloading',  err);
-							// Optionally, handle cleanup if needed
-							return res.status(500).send(`Error in Downloading ${reportfile}`);
-						}else{
-							
-							console.log('Successfully downloaded REPRINT FILE:', fullFilePath);
-							
-							fs.unlink(fullFilePath, (unlinkerr) => {
-								if (unlinkerr) {
-									console.error('Error deleting temporary REPRINT file:', unlinkerr);
-								} else {
-									console.log('Successfully deleted temporary REPRINT file:', fullFilePath);
-								}
-							});
-							
-
-						}
-						
-					});
-
-					
-				}) //=========end asndf.reportpdf
-
-			
-				//******************END DOWNLOAD ******************* */
-
-			} catch (err) {
-				console.error('Error generating report:', err);
-				res.status(500).json({ error: 'Error generating report' });
-			}//=========== end try
-
-		}//eif
-
-	}catch(error){
-		console.error('Error in checkpdf:', error);
-		res.status(500).json({error:'Error'})
-	}	//====end try
+	}//end switch
+	
 
 })
 
 //======= CREATE PDF
-router.get('/createpdf/:batch/:whois', async (req, res) => {
+router.get('/createpdf/:e_num/:batch/:whois', async (req, res) => {
   console.log('===createpdf()====', req.params.e_num);
   
-  const { batch, whois } = req.params;
+  const { e_num, batch, whois } = req.params;
   
   // Step 1: Update download_empid with whois
   try {
@@ -1560,7 +1592,24 @@ router.get('/createpdf/:batch/:whois', async (req, res) => {
     return res.status(500).json({ error: 'Failed to update download_empid' });
   }
   
-  // Step 2: Fetch records for the given emp_id and pdf_batch
+  // Step 2: Fetch report data
+//   sql=`SELECT b.full_name as rider, 
+// 		b.emp_id, 
+// 		b.category,
+// 		b.hubs_location as hub, 
+// 		a.region, 
+// 		coalesce(round(sum(b.amount),2),0) as total,
+// 		b.pdf_batch, 
+// 		b.track_number as track,
+// 		b.claims_reason as reason,
+// 		b.batch_file 
+// 		FROM asn_spx_hubs a 
+// 		INNER JOIN asn_claims b on a.hub = b.hubs_location and b.transaction_year='2025' 
+// 		WHERE b.emp_id = ? and b.pdf_batch = ?
+// 		and (b.pdf_batch is null or b.pdf_batch = '')
+// 		GROUP BY b.hubs_location, b.emp_id
+// 		ORDER BY sum(b.amount) DESC`
+
 
   const sql = `
     SELECT emp_id,
@@ -1612,98 +1661,97 @@ router.get('/createpdf/:batch/:whois', async (req, res) => {
 });
 
 
-// router.get('/xxxcreatepdf/:e_num/:batch/:whois', async(req, res)=>{
 
-// 	console.log('===createpdf()====', req.params.e_num)
+router.get('/xxxcreatepdf/:e_num/:batch/:whois', async(req, res)=>{
+
+	console.log('===createpdf()====', req.params.e_num)
 	
 	
-// 	const sql = `SELECT emp_id,
-// 		full_name as rider,
-// 		category,
-// 		hubs_location as hub, 
-// 		track_number as track,
-// 		claims_reason as reason,
-// 		sum( amount ) as total,
-// 		pdf_batch
-// 		from asn_claims
-// 		group by full_name,emp_id,category,hubs_location, track_number,claims_reason
-// 		having emp_id='${req.params.e_num}' and pdf_batch ='${req.params.batch}'
-// 		order by full_name`
+	const sql = `SELECT emp_id,
+		full_name as rider,
+		category,
+		hubs_location as hub, 
+		track_number as track,
+		claims_reason as reason,
+		sum( amount ) as total,
+		pdf_batch
+		from asn_claims
+		group by full_name,emp_id,category,hubs_location, track_number,claims_reason
+		having emp_id='${req.params.e_num}' and pdf_batch ='${req.params.batch}'
+		order by full_name`
 
-// 	console.log('==== createpdf() ==== ')
+	console.log('==== createpdf() ==== ')
 
-// 	connectDb()
-// 	.then((xdb)=>{
-// 		db.query(`${sql}`,(error,results) => {	
-// 		console.log( results )
+	connectDb()
+	.then((xdb)=>{
+		db.query(`${sql}`,(error,results) => {	
+		console.log( results )
 
-// 			if ( results.length == 0) {   //data = array 
-// 				console.log('no rec')
-// 				closeDb(xdb);//CLOSE connection
+			if ( results.length == 0) {   //data = array 
+				console.log('no rec')
+				closeDb(xdb);//CLOSE connection
 		
-// 				res.status(500).send({error:'error'})
+				res.status(500).send({error:'error'})
 		
-// 			}else{ 
+			}else{ 
 			
-// 				let xdata = []
+				let xdata = []
 
-// 				xdata = results //get result in array
-// 				const curr_date = strdates()
+				xdata = results //get result in array
+				const curr_date = strdates()
 
-// 				let total_amt = 0
-// 				for(let zkey in results){
+				let total_amt = 0
+				for(let zkey in results){
 					
-// 					total_amt+=parseFloat(results[zkey].total)
-// 					results[zkey].total= parseFloat(results[zkey].total).toFixed(2) //change to decimal first
+					total_amt+=parseFloat(results[zkey].total)
+					results[zkey].total= parseFloat(results[zkey].total).toFixed(2) //change to decimal first
 					 
-// 				}//endfor
+				}//endfor
 
-// 				let nFormatTotal = addCommas(parseFloat(total_amt).toFixed(2))
-// 				let nTotal = parseFloat(total_amt).toFixed(2)
+				let nFormatTotal = addCommas(parseFloat(total_amt).toFixed(2))
+				let nTotal = parseFloat(total_amt).toFixed(2)
 		
-// 				//=== CREATE PDF ===========
-// 				asnpdf.reportpdf( xdata, curr_date,  nFormatTotal, nTotal, req.params.batch)
-// 				.then( reportfile =>{
+				//=== CREATE PDF ===========
+				asnpdf.reportpdf( xdata, curr_date,  nFormatTotal, nTotal, req.params.batch)
+				.then( reportfile =>{
 
-// 					console.log('==REPORT PDF SUCCESS!===', reportfile)
+					console.log('==REPORT PDF SUCCESS!===', reportfile)
 					
-// 					//============ force download
-// 					res.download( reportfile, reportfile,(err)=>{
-// 						console.log('==DOWNLOADING PDF TO CLIENT===')
-// 						if(err){
-// 							console.error('Error in Downloading ',reportfile,err)
+					//============ force download
+					res.download( reportfile, reportfile,(err)=>{
+						console.log('==DOWNLOADING PDF TO CLIENT===')
+						if(err){
+							console.error('Error in Downloading ',reportfile,err)
 
-// 							closeDb(xdb)
+							closeDb(xdb)
 
-// 							res.status(500).send(`Error in Downloading ${reportfile}`)
-// 						}else{
+							res.status(500).send(`Error in Downloading ${reportfile}`)
+						}else{
 
-// 							closeDb(xdb)
-// 							console.log(req.params.batch , ' SUCCESS DOWNLOADED BY CLIENT')
-// 						}
-// 					}) //===end res.download
-// 				})
-// 			}//eif
-// 		})
+							closeDb(xdb)
+							console.log(req.params.batch , ' SUCCESS DOWNLOADED BY CLIENT')
+						}
+					}) //===end res.download
+				})
+			}//eif
+		})
 
-// 	}).catch((error)=>{
-// 		res.status(500).json({error:'Error'})
-// 	}) 
-// })
+	}).catch((error)=>{
+		res.status(500).json({error:'Error'})
+	}) 
+})
 
 //====== CLEANUP PDF
+router.get('/deletepdf/:e_num', async(req, res) => {
 
-router.get('/deletepdf/:batch', async(req, res) => {
+	let reportfile = `ADT_${req.params.e_num}.pdf`
 
-	const batchFile = req.params.batch
-	const batchFileName = batchFile.includes('.pdf') ? batchFile : `${batchFile}.pdf`
-
- 	Utils.deletePdf( `${batchFileName}`)
+ 	Utils.deletePdf(reportfile)
 	.then(x => {
 		if(x){
 			
 			//=== RETURN RESULT ===//
-			console.log('*** Deleted temp file ', batchFile)
+			console.log('*** Deleted temp file ', reportfile)
 			
 			//update patient record
 			//closeDb(xdb)

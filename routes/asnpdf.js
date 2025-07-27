@@ -99,8 +99,8 @@ module.exports =  {
             let contentx = template(pdfData);
 
             
-            pdf.create( contentx, options ).toFile( `ADT_${xdata[0].emp_id}.pdf`,(err, res ) => {
-                console.log( path.basename(res.filename), '==created' )
+            pdf.create( contentx, options ).toFile( `${batch_code}.pdf`,(err, res ) => {
+                console.log( path.basename(res.filename), '=== //CREATED//====' )
 
                 if(res.filename){
                     resolve( path.basename(res.filename) )        
