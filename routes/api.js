@@ -1391,7 +1391,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 				round(SUM(amount),2) as total,
 				pdf_batch
 				FROM asn_claims WHERE ${whereClause}
-				GROUP BY emp_id, full_name,pdf_batch`; // Use parameterized query
+				GROUP BY emp_id, full_name,track_number,pdf_batch`; // Use parameterized query
 				
 			// Execute the query
 			const [rows, fields] = await db.query(sql, values );// Pass values as an array
@@ -1484,7 +1484,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 					pdf_batch
 				FROM asn_claims
 				WHERE pdf_batch = ? 
-				GROUP BY emp_id, full_name,pdf_batch
+				GROUP BY emp_id, full_name,track_number,pdf_batch
 				ORDER BY full_name;`;
 
 			try {
