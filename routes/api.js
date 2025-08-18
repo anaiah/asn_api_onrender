@@ -914,11 +914,10 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 })
 
 //============search by id or name
-router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => {
-	const { enum: emp_id, ename, region, grpid, email } = req.params;
+router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, res) => {
+	const { enum: emp_id, ename, region, grpid, email, filter} = req.params;
 
-	let sqlins = '';
-	let sqlzins = '';
+	let sqlins = '', sqlzins = '',sqlfilter='', sqlgroup = ''
 
 	// Build search condition
 	if (ename !== 'blank' && emp_id !== 'blank') {
@@ -929,65 +928,75 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
 		sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
 	}
 
+	//filter type
+	if (filter === 'new') {
+		sqlfilter = ' b.pdf_batch IS NULL' 
+		sqlgroup = ' b.batch_file '
+	}else{
+		sqlfilter = ` b.pdf_batch IS NOT NULL OR  b.pdf_batch <> '' `;
+		sqlgroup =	' b.pdf_batch '
+	}
+
+
 	try {
 		// Build conditional SQL for region and group
 		if (region !== 'ALL') {
-		switch (grpid) {
-			case '6': // head coord
-			sqlins = ` AND a.head_coordinator_email = '${email}' `;
-			break;
-			case '7': // coord
-			sqlins = ` AND a.coordinator_email = '${email}' `;
-			break;
-		}
+			switch (grpid) {
+				case '6': // head coord
+				sqlins = ` AND a.head_coordinator_email = '${email}' `;
+				break;
+				case '7': // coord
+				sqlins = ` AND a.coordinator_email = '${email}' `;
+				break;
+			}
 
-		var sql = `
-		SELECT 
-				b.id,
-				b.full_name AS rider, 
-				b.emp_id, 
-				b.hubs_location AS hub, 
-				a.region, 
-				count(b.id) as id_count,
-				COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-				b.pdf_batch,
-				b.batch_file,
-				b.transaction_year,
-				c.full_name as downloaded_by
-			FROM asn_claims b
-			LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-			left join asn_users c on c.id = b.download_empid
-			WHERE ${sqlzins}
-				${sqlins}
-				AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
-				AND b.transaction_year='2025'
-			GROUP BY b.emp_id,b.full_name,b.pdf_batch  
-			ORDER BY b.emp_id, b.full_name;`;
+			var sql = `
+			SELECT 
+					b.id,
+					b.full_name AS rider, 
+					b.emp_id, 
+					b.hubs_location AS hub, 
+					a.region, 
+					count(b.id) as id_count,
+					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+					b.pdf_batch,
+					b.batch_file,
+					b.transaction_year,
+					c.full_name as downloaded_by
+				FROM asn_claims b
+				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+				left join asn_users c on c.id = b.download_empid
+				WHERE ${sqlzins}
+					${sqlins}
+					AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
+					AND b.transaction_year='2025'
+				GROUP BY b.emp_id,b.full_name,b.pdf_batch  
+				ORDER BY b.batch_file, b.full_name;`;
 
 		} else {
 
-		// No region filter, show all SUPER-USERS here 
-		var sql = `
-			SELECT 
-				b.id,
-				b.full_name AS rider, 
-				b.emp_id, 
-				b.hubs_location AS hub, 
-				a.region, 
-				count(b.id) as id_count,
-				COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-				b.pdf_batch,
-				b.batch_file,
-				b.transaction_year,
-				c.full_name as downloaded_by
-			FROM asn_claims b
-			LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-			left join asn_users c on c.id = b.download_empid
-			WHERE ${sqlzins}
-				AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
-				AND b.transaction_year='2025'
-			GROUP BY b.emp_id,b.full_name,b.pdf_batch  
-			ORDER BY b.emp_id, b.full_name;`;
+			// No region filter, show all SUPER-USERS here 
+			var sql = `
+				SELECT 
+					b.id,
+					b.full_name AS rider, 
+					b.emp_id, 
+					b.hubs_location AS hub, 
+					a.region, 
+					count(b.id) as id_count,
+					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+					b.pdf_batch,
+					b.batch_file,
+					b.transaction_year,
+					c.full_name as downloaded_by
+				FROM asn_claims b
+				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+				left join asn_users c on c.id = b.download_empid
+				WHERE ${sqlzins}
+					AND ( ${sqlfilter} )
+					AND b.transaction_year='2025'
+				GROUP BY b.full_name, ${sqlgroup}
+				ORDER BY b.batch_file, b.full_name;`;
 		}
 
 		console.log('===get Employee id/name Processing:', sql);
@@ -999,6 +1008,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
 			return res.status(200).send('**No Record Found***');
 		}
 
+		console.log('===get Employee id/name Results:', results.length);
 		let totalAmt = 0;
 		
 		results.forEach(r => {
@@ -1024,7 +1034,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email', async (req, res) => 
 		
 		// Build the HTML table for output
 		let xtable = `
-		<h2>(${region.toUpperCase()})</h2>
+		<h2>(${region.toUpperCase()}) </h2>
 		<table class='table' width='60%'>
 			<thead>
 			<tr>
