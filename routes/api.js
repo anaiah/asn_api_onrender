@@ -949,7 +949,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 	//filter type
 	if (filter === 'new') {
 		sqlfilter = ' b.pdf_batch IS NULL' 
-		sqlgroup = ' b.batch_file '
+		sqlgroup = ' b.emp_id '
 	}else{
 		sqlfilter = ` b.pdf_batch IS NOT NULL OR  b.pdf_batch <> '' `;
 		sqlgroup =	' b.pdf_batch '
@@ -1104,6 +1104,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 			</tr>
 			<tr>
 				<td colspan='2'>
+				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;Download ALL PDF</button>
 				<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
 					<!-- Continuation from previous code snippet -->
 				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
@@ -1114,7 +1115,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 			`;
 
 		// Send the constructed HTML as response
-		res.status(200).send(xtable);
+		res.status(200).json({text:xtable, xdata:results});
 	} catch (err) {
 		console.error('Error processing request:', err);
 		res.status(500).json({ error: 'Error' });
