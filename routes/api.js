@@ -1160,12 +1160,12 @@ router.get('/resetpdf/:batch',async(req,res)=>{
 	//res.status(200).json({status:true})
 	console.log('**** RESET PDF **** ', req.params.batch)
 	
-	let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE pdf_batch = ? ` // Use the update conditions
+	let sql2 = 	`UPDATE asn_claims SET download_empid = null , pdf_batch = null WHERE pdf_batch = ? ` // Use the update conditions
 	console.log('==UPDATING ==', req.params.batch)
 	
 	// // Step 1: Update download_empid with whois
 	try {
-		const [rows] = await db.query( sql2,[ null, null, req.params.batch]);
+		const [rows] = await db.query( sql2,[ req.params.batch]);
 		
 		if(rows.affectedRows > 0){
 			return res.status(200).json({status:true})
