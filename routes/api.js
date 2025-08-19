@@ -949,7 +949,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 	//filter type
 	if (filter === 'new') {
 		sqlfilter = ' b.pdf_batch IS NULL' 
-		sqlgroup = ' b.emp_id '
+		sqlgroup = ' b.batch_file '
 	}else{
 		sqlfilter = ` b.pdf_batch IS NOT NULL OR  b.pdf_batch <> '' `;
 		sqlgroup =	' b.pdf_batch '
