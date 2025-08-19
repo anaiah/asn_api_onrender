@@ -705,7 +705,7 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
       `
     }
 
-    console.log('=======Top 5 Hub processing...', sql );
+    console.log('=======Top 5 Hub processing...');
 
     // get connection from pool
     const [results] = await db.query(sql);
@@ -800,7 +800,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
       `;
     }
 	
-	console.log('=======Top 5 Rider processing...', sql );
+	console.log('=======Top 5 Rider processing...' );
 
     // Simply use db.query() because `db` is already your pool object
     const [results] = await db.query(sql);
@@ -913,6 +913,24 @@ router.get('/getfinance/:region/:email', async( req, res) =>{
 	}) 
 })
 
+const os = require('os')
+
+const getServerIp = () =>{
+	const interfaces = os.networkInterfaces();
+	const addresses = []
+
+	for ( const name in interfaces){
+		for( const iface of interfaces[name]){
+			if(iface.family==='IPv4' && !iface.internal ){
+				addresses.push(iface.address)
+			}
+		}
+	}//===endfor
+
+	return addresses
+}
+
+
 //============search by id or name
 router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, res) => {
 	const { enum: emp_id, ename, region, grpid, email, filter} = req.params;
@@ -988,6 +1006,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 					b.pdf_batch,
 					b.batch_file,
 					b.transaction_year,
+					b.download_empid,
 					c.full_name as downloaded_by
 				FROM asn_claims b
 				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
@@ -1050,8 +1069,10 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 
 				xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
 				Downloaded by: ${(r.downloaded_by==null?'NO ID':r.downloaded_by)}`
-				xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}')" class='btn btn-primary btn-sm'>Re-Print ${r.pdf_batch}</a>`
-						
+				xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-primary btn-sm'>RE-PRINT ${r.pdf_batch}</a>
+				 <a href='javascript:void(0)' onclick="asn.resetPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-danger btn-sm'>RESET ${r.pdf_batch}</a>
+				`
+				
 			}else{
 				xpdfbatch = "ATD PDF NOT YET PROCESSED"	
 				xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-primary btn-sm'>Add to Print</a>`
@@ -1083,7 +1104,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 			</tr>
 			<tr>
 				<td colspan='2'>
-				<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+				<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
 					<!-- Continuation from previous code snippet -->
 				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
 				</td>
@@ -1130,6 +1151,32 @@ router.get('/getchart', async (req, res) => {
 		res.status(500).json({ error: 'Error' });
 	}
 });
+
+//================ RESET PDF=================//
+router.get('/resetpdf/:batch',async(req,res)=>{
+
+
+	//res.status(200).json({status:true})
+	console.log('**** RESET PDF **** ', req.params.batch)
+	
+	let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE pdf_batch = ? ` // Use the update conditions
+	console.log('==UPDATING ==', req.params.batch)
+	
+	// // Step 1: Update download_empid with whois
+	try {
+		const [rows] = await db.query( sql2,[ null, null, req.params.batch]);
+		
+		if(rows.affectedRows > 0){
+			return res.status(200).json({status:true})
+		}//eif
+
+
+	} catch (err) {
+		console.error(`Error updating ${newbatch}:`, err);
+		return res.status(500).json({ error: `Failed to update for batch ${newbatch}` });
+	}
+})
+
 
 
 //================= GET LIST PDF =================//
@@ -1627,7 +1674,7 @@ router.get('/menu/:grpid', async(req,res)=>{
 		//console.log(sql2)
 
 		xdb.query( sql2 ,  (error, results)=>{
-			console.log( error,results )
+			//console.log( error,results )
 			res.status(200).json( results )
 		})
 
