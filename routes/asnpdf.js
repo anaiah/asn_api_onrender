@@ -30,7 +30,6 @@ const addCommas = (nStr) => {
 }
 
 
-
 module.exports =  {
     tester: async(req, res) =>{
         console.log(req.params.tester)

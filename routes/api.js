@@ -1480,7 +1480,8 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 			const totalFixed = parseFloat(total_amt).toFixed(2);
 			const curr_date = strdates();
 			
-			asnpdf.newCreatePDF( rows, totalFormatted, curr_date, res, newbatch )
+			//****************** create pdf ***************************** */
+			asnpdf.newCreatePDF( rows, rows[0].rider, totalFormatted, totalFixed, curr_date, res, newbatch )
 
 			//******************END DOWNLOAD ******************* */
 				
