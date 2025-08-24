@@ -1457,9 +1457,8 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 			const newbatch = batch; // Get the new batch number	
 			//console.log( sql, newbatch, rows)
 
-			//========NECESSARY TO UPDATE WHO CREATED/DOWNLOADED THE ATD PDF ================
 			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE ${updateconditions.join(' OR ')}`; // Use the update conditions
-			console.log('==UPDATING PDF BATCH AND WHO UPDATED==', newbatch )
+			console.log('==UPDATING ==', newbatch )
 			
 			// // Step 1: Update download_empid with whois
 			try {
@@ -1480,17 +1479,56 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 			const totalFixed = parseFloat(total_amt).toFixed(2);
 			const curr_date = strdates();
 			
-			asnpdf.newCreatePDF( rows, totalFormatted, curr_date, res, newbatch )
+			//=== CREATE PDF ===========
+			asnpdf.reportpdf( rows, curr_date, totalFormatted, totalFixed, newbatch)
+			.then(  reportfile =>{
 
+				console.log('==REPORT PDF SUCCESS!===', reportfile)
+
+				// *******************Download PDF******************************
+				const pdfDirectory = path.join(__dirname, '..'); //Correct // Go up one level to the project root
+				const fullFilePath = path.join(pdfDirectory, reportfile);  // Create the full path
+				//const reportfileName = 'http://10.202.213.221:10020/' + path.basename(reportfile); // Get the file name from the path
+
+				console.log("Full PDF Path:", fullFilePath, reportfile);  // Check the full path!
+
+				console.log('=====update val', values)
+
+				//============ force download
+
+				res.download(fullFilePath, (err) => {  // Use fullFilePath and reportfile name
+					if (err) {
+						console.error('Error in Downloading',  err);
+						// Optionally, handle cleanup if needed
+						return res.status(500).send(`Error in Downloading ${reportfile}`);
+					}else{
+						
+						console.log('Successfully downloaded NEW FILE :', fullFilePath);
+						
+						fs.unlink(fullFilePath, (unlinkerr) => {
+							if (unlinkerr) {
+								console.error('Error deleting temporary file:', unlinkerr);
+							} else {
+								console.log('Successfully deleted temporary NEW FILE:', fullFilePath);
+							}
+						});
+						
+
+					}
+					
+				});
+
+				
+			})
+
+			
 			//******************END DOWNLOAD ******************* */
 				
 
 		}else{
 			//************ REPRINT WITH BATCH FILE EXISTING ***************** */
-
-			// If batch is defined, fetch records for the given emp_id and pdf_batch, res
-			console.log('==REPRINT / REVISED / NEW BATCH ==', batch, whois)
-
+			// If batch is defined, fetch records for the given emp_id and pdf_batch
+			console.log('==REPRINT / NEW BATCH ==', batch, whois)
 			const sql = `
 				SELECT emp_id,
 						emp_id,
@@ -1525,56 +1563,55 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 				const totalFixed = parseFloat(total_amt).toFixed(2);
 				const curr_date = strdates();
 
-				
-				// asnpdf.reportpdf( rows, curr_date, totalFormatted, totalFixed, batch)
-				// .then( async reportfile =>{
+				//=== CREATE PDF ===========
+				asnpdf.reportpdf( rows, curr_date, totalFormatted, totalFixed, batch)
+				.then( async reportfile =>{
 
-				// 	console.log('==REPORT PDF SUCCESS!===', reportfile)
+					console.log('==REPORT PDF SUCCESS!===', reportfile)
 
-				// 	// *******************Download PDF******************************
-				// 	const pdfDirectory = path.join(__dirname, '..'); //Correct // Go up one level to the project root
-				// 	const fullFilePath = path.join(pdfDirectory, reportfile);  // Create the full path
+					// *******************Download PDF******************************
+					const pdfDirectory = path.join(__dirname, '..'); //Correct // Go up one level to the project root
+					const fullFilePath = path.join(pdfDirectory, reportfile);  // Create the full path
 
-				// 	console.log("Full PDF Path:", fullFilePath);  // Check the full path!
+					console.log("Full PDF Path:", fullFilePath);  // Check the full path!
 
-				// 	let sql2 = 	`UPDATE asn_claims SET download_empid = ?  WHERE pdf_batch = ?`; // Use the update conditions
-				// 	console.log('==UPDATING==', batch )
+					let sql2 = 	`UPDATE asn_claims SET download_empid = ?  WHERE pdf_batch = ?`; // Use the update conditions
+					console.log('==UPDATING==', batch )
 					
-				// 	// Step 1: Update download_empid with whois
-				// 	try {
-				// 		await db.query( sql2,[whois, batch]);
-				// 	} catch (err) {
-				// 		console.error(`Error updating download_empid: ${batch}`, err);
-				// 		return res.status(500).json({ error: `Failed to update download_empid ${batch}` });
-				// 	}
+					// Step 1: Update download_empid with whois
+					try {
+						await db.query( sql2,[whois, batch]);
+					} catch (err) {
+						console.error(`Error updating download_empid: ${batch}`, err);
+						return res.status(500).json({ error: `Failed to update download_empid ${batch}` });
+					}
 	 				
-				// 	//============ force download
+					//============ force download
 
-				// 	res.download(fullFilePath, (err) => {  // Use fullFilePath and reportfile name
-				// 		if (err) {
-				// 			console.error('Error in Downloading',  err);
-				// 			// Optionally, handle cleanup if needed
-				// 			return res.status(500).send(`Error in Downloading ${reportfile}`);
-				// 		}else{
+					res.download(fullFilePath, (err) => {  // Use fullFilePath and reportfile name
+						if (err) {
+							console.error('Error in Downloading',  err);
+							// Optionally, handle cleanup if needed
+							return res.status(500).send(`Error in Downloading ${reportfile}`);
+						}else{
 							
-				// 			console.log('Successfully downloaded REPRINT FILE:', fullFilePath);
+							console.log('Successfully downloaded REPRINT FILE:', fullFilePath);
 							
-				// 			fs.unlink(fullFilePath, (unlinkerr) => {
-				// 				if (unlinkerr) {
-				// 					console.error('Error deleting temporary REPRINT file:', unlinkerr);
-				// 				} else {
-				// 					console.log('Successfully deleted temporary REPRINT file:', fullFilePath);
-				// 				}
-				// 			});
-				// 		}//eif 
+							fs.unlink(fullFilePath, (unlinkerr) => {
+								if (unlinkerr) {
+									console.error('Error deleting temporary REPRINT file:', unlinkerr);
+								} else {
+									console.log('Successfully deleted temporary REPRINT file:', fullFilePath);
+								}
+							});
+						}//eif 
 						
-				// 	});
+					});
 
 					
-				// }) //=========end asndf.reportpdf
+				}) //=========end asndf.reportpdf
 
-				//******************* */ CREATE PDF ******************/
-				asnpdf.newCreatePDF( rows, rows[0].rider, totalFormatted, totalFixed, curr_date, res, batch )
+			
 				//******************END DOWNLOAD ******************* */
 
 			} catch (err) {
