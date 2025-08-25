@@ -92,7 +92,7 @@ module.exports =  {
 
         const totalRecords = rows.length;
         const recordsPerPage = 24;
-        const totalPages = Math.ceil(totalRecords / recordsPerPage);
+        const totalPages = Math.ceil(totalRecords / recordsPerPage) + 1;
 
         // Load logo as base64
         const logoPath = path.join(__dirname, 'asiaone.png');
