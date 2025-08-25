@@ -167,7 +167,7 @@ module.exports =  {
 
         //=========GENERATE THE FIRST PAGE 
         htmlContent += `
-        <div class="mycontainer">
+        <div class="pagex">
                 <div  class="mb-2">
                     <div style="text-align:center"> 
                         <img src="data:image/png;base64,${logoImage}" height="29px" /><br>
