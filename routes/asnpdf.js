@@ -143,6 +143,7 @@ module.exports =  {
             }
             
             .record-group {
+                font-size:7px;
                 display: block; /* Default, kept for clarity */
                 /* optional margin for clarity in debugging */
                 /* margin-bottom: 10px; */
@@ -253,16 +254,16 @@ module.exports =  {
                 <div  class="mb-1">
                     <div style="text-align:left"> 
                         <img src="data:image/png;base64,${logoImage}" height="29px" /><br>
-                        <span class="addy"><br>
+                        <span class="pagex"><br>
                             <b>ANNEX A.</b>
                         </span>
                     </div>
                 </div>`;
            
             htmlContent += `
-            <div class="record-group" style="width:100%;">
+            <div class="record-group pagex" style="width:100%;">
                 <br>
-                <table>
+                <table class="pagex">
                 <tr>
                 <th>Rider Information</th>
                 <th>Track No.</th>
