@@ -103,8 +103,13 @@ module.exports =  {
 
         //=== CREATE PDF ===========
         let htmlContent = `
-            <html>
+            <!DOCTYPE html>
+            <html lang="en">
             <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Document</title>
+
             <style>
             
             body {
@@ -132,6 +137,10 @@ module.exports =  {
             .pagex{
                 font-size:7px;
             }
+
+            .mycontainer{
+                font-size :8px;
+            }
             
             .record-group {
                 display: block; /* Default, kept for clarity */
@@ -143,6 +152,13 @@ module.exports =  {
                 page-break-after: always;
                 break-inside: avoid;
             }
+
+            hr{
+                border:none;
+                height:1px;
+                background-color:#000000;
+                margin:20px auto;
+            }
         </style>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     
@@ -151,25 +167,27 @@ module.exports =  {
 
         //=========GENERATE THE FIRST PAGE 
         htmlContent += `
-         
-            <div  class="mb-5">
-                <div style="text-align:center"> 
-                    <img src="data:image/png;base64,${logoImage}" height="29px" /><br>
-                    <span class="addy">
-                    <B>ASIA NOW ENTERPRISES INC.</B><br>
-                    20F Arthaland Century Pacific Tower<br>
-                    4th Ave. 30th St., Taguig, Metro Manila<br>
-                    <b>#${batch}</b><br>
-                    <hr>
-                    </span>
+        <div class="mycontainer">
+                <div  class="mb-2">
+                    <div style="text-align:center"> 
+                        <img src="data:image/png;base64,${logoImage}" height="29px" /><br>
+                        <span class="addy">
+                        <B>ASIA NOW ENTERPRISES INC.</B><br>
+                        20F Arthaland Century Pacific Tower<br>
+                        4th Ave. 30th St., Taguig, Metro Manila<br>
+                        <b>#${batch}</b>
+                        </span>
+                        <hr>
+                    </div>
                 </div>
-            </div>
-
-            <div class="mt-5" style="text-align:center">
+            
+                <div class="" style="text-align:center; width:100%;">
+                
                     <span>
-                        <b>AUTHORITY TO DEDUCT</b>
+                    <b>AUTHORITY TO DEDUCT</b>
                     </span>
                 </div>
+
                 <br><br><br><br>
 
                 <b>${curr_date}</b><br><br><br>
@@ -188,21 +206,21 @@ module.exports =  {
                 simula sa pinakamalapit na petsa ng pay-out matapos ko na maisumite ang Authority To Deduct (ATD) na ito.    
                 </ul><br>
 
-                <div class="ms-5 mb-100 ">`
+                <div class="ms-2">`
                 
                 aAmt.forEach((element,idx) => {
                     const seq = idx + 1;
                      htmlContent+=`
-                    <p style="width:100% ; display: table;">
+                    <p style="width:100% ; margin-left: 20px; display: table;">
                     <span style="display: table-cell; width:10%; border-bottom: 1px solid black;"></span>
                     <span style="display: table-cell; width: 90%;">Option ${seq} - Ibawas sa ${seq} hulog ng halagang <b><u>PhP ${addCommas(element.toFixed(2))}</u></b> bawat hulog.</span>
                     </p>`
                 });
 
                 
-                htmlContent+=`</div><br><br>
+                htmlContent+=`</div>
 
-                <div>
+                <div class="mt-3">
                     Isinasagawa ko ang Awtorisasyong ito nang malaya at kusang-loob, at pagkatapos kong lubos na maunawaan at tanggapin ang aking mga obligasyon.
                     <br><br><br><br><br>
 
@@ -219,6 +237,8 @@ module.exports =  {
                 </div>
 
             </div>
+            </div>
+            <!--//end my container//-->
             <div class="page-break"></div>
                     
         `
@@ -230,7 +250,7 @@ module.exports =  {
             //create header
             
             htmlContent += `
-                <div  class="mb-5">
+                <div  class="mb-1">
                     <div style="text-align:left"> 
                         <img src="data:image/png;base64,${logoImage}" height="29px" /><br>
                         <span class="addy"><br>
