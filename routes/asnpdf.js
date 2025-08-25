@@ -120,17 +120,16 @@ module.exports =  {
                 font-size: ${fontmain};
             }
             table {
-                border-collapse: collapse;
-                border-spacing: 0;
-                margin: 0;
+                border:1px solid black;
                 width: 100%;
                 font-size: ${fonttable};
             }
-            th, td {
+            td {
                 padding: 4px;
-                border: 1px solid #ddd;
+                border: 1px solid black;
             }
             th {
+                padding:4px;
                 background-color: #f2f2f2;
             }
             
@@ -261,9 +260,9 @@ module.exports =  {
                 </div>`;
            
             htmlContent += `
-            <div class="record-group pagex" style="width:100%;">
+            <div class="record-group" style="width:100%;">
                 <br>
-                <table class="pagex">
+                <table border="1">
                 <tr>
                 <th>Rider Information</th>
                 <th>Track No.</th>
