@@ -52,9 +52,9 @@ module.exports =  {
         let numOption = 0,  aAmt = []
         //********************** OPTIONS ****************/
         switch (true){
-            case ( parseInt( totalFixed <= 300 )):
+            case ( parseInt( totalFixed  ) <= 300):
                 numOption = 1
-                aAmt.push( parseInt(totalFixed) )
+                //aAmt.push( parseInt(totalFixed) )
                // aAmt.push( totalFixed)
             break
 
@@ -82,11 +82,11 @@ module.exports =  {
 
         console.log(numOption, 'howmany hulog')
 
-        if(numOption > 1){
+        //if(numOption > 1){
             for( x=1; x <= numOption; x++){
                 aAmt.push( parseInt(totalFixed) / x)
             }
-        }
+        //}
         
 
         const totalRecords = rows.length;
@@ -97,6 +97,10 @@ module.exports =  {
         const logoPath = path.join(__dirname, 'asiaone.png');
         const logoImage = fs.readFileSync(logoPath).toString('base64');
 
+        const fontmain = '9px' //orig is 10jpx
+        const fontaddy = '9px'
+        const fonttable='8px'
+
         //=== CREATE PDF ===========
         let htmlContent = `
             <html>
@@ -105,17 +109,17 @@ module.exports =  {
             
             body {
                 font-family: 'Arial', sans-serif;
-                font-size: 10px;
+                font-size: ${fontmain};
             }
             .addy{
-            font-size: 10px;
+                font-size: ${fontmain};
             }
             table {
-            border-collapse: collapse;
-            border-spacing: 0;
-            margin: 0;
-            width: 100%;
-            font-size: 10px;
+                border-collapse: collapse;
+                border-spacing: 0;
+                margin: 0;
+                width: 100%;
+                font-size: ${fonttable};
             }
             th, td {
                 padding: 4px;
