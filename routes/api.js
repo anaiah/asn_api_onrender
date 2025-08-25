@@ -1429,7 +1429,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 					updateconditions.push(`(full_name = '${obj.name}' and emp_id = '${obj.empid}')`); // Prepare for update
 					values.push(obj.name, obj.empid); // Add the values in the correct order
 				} else {
-					console.warn("Skipping object with missing name or id:", obj);
+					//console.warn("Skipping object with missing name or id:", obj);
 				}
 			}
 

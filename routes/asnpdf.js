@@ -49,11 +49,12 @@ module.exports =  {
         3001 - AND ABOVE 1 TO  10
         */
  
-        let numOption = 0,  contribute = 0, aAmt = []
+        let numOption = 0,  aAmt = []
         //********************** OPTIONS ****************/
         switch (true){
             case ( parseInt( totalFixed <= 300 )):
                 numOption = 1
+                aAmt.push( parseInt(totalFixed) )
                // aAmt.push( totalFixed)
             break
 
@@ -80,15 +81,13 @@ module.exports =  {
         }//end switch
 
         console.log(numOption, 'howmany hulog')
-        for( x=1; x <= numOption; x++){
-            aAmt.push( parseInt(totalFixed) / x)
+
+        if(numOption > 1){
+            for( x=1; x <= numOption; x++){
+                aAmt.push( parseInt(totalFixed) / x)
+            }
         }
-
-       // console.log( aAmt)
-
-        //asnpdf.newCreatePDF( rows, totalFormatted, curr_date, res, newbatch )
-        //======FOR PDF
-        contribute = totalFixed / numOption
+        
 
         const totalRecords = rows.length;
         const recordsPerPage = 24;
