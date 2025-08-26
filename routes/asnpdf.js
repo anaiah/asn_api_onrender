@@ -49,7 +49,7 @@ module.exports =  {
         3001 - AND ABOVE 1 TO  10
         */
  
-        let numOption = 0,  aAmt = []
+        let numOption = 0,  nSpace = 11, aAmt = []
         //********************** OPTIONS ****************/
         switch (true){
             case ( parseInt( totalFixed  ) <= 300):
@@ -86,6 +86,8 @@ module.exports =  {
             for( x=1; x <= numOption; x++){
                 aAmt.push( parseInt(totalFixed) / x)
             }
+
+            nSpace = nSpace - numOption 
         //}
         
 
@@ -237,6 +239,13 @@ module.exports =  {
                     </p>`
                 });
 
+                /*** write how many spaces so signature wud stay at the bottom */
+                for (let x = 1; x <= nSpace; x ++ ) {
+                     htmlContent+=`
+                    <p style="width:100% ; margin-left: 20px; display: table;">
+                    &nbsp;
+                    </p>`
+                }//endfor
                 
                 htmlContent+=`</div>
 
