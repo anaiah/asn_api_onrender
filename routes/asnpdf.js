@@ -119,19 +119,39 @@ module.exports =  {
             .addy{
                 font-size: ${fontmain};
             }
-            table {
-                border:1px solid black;
-                width: 100%;
-                font-size: ${fonttable};
+            table.blueTable {
+            font-family: "Courier New", Courier, monospace;
+            border: 0px solid #1C6EA4;
+            /*background-color: #fff8f8ff*/
+            width: 100%;
+            border-collapse: collapse;
             }
-            td {
-                padding: 4px;
-                border: 1px solid black;
+            table.blueTable td, table.blueTable th {
+            border: 1px solid #AAAAAA;
+            padding: 3px 2px;
+            
             }
-            th {
-                padding:4px;
-                background-color: #f2f2f2;
+            table.blueTable tbody td {
+            font-size: 7px;
+            color: #333333;
+            border: 1px solid #D0E4F5;
             }
+            table.blueTable thead {
+            background: #C1B9B8;
+            border-bottom: 0px solid black;
+            }
+            table.blueTable thead th {
+            font-size: 8px;
+            text-align:center;
+            font-weight: bold;
+            color: #3B3B3B;
+            border-left: 1px solid #D0E4F5;
+            }
+            table.blueTable thead th:first-child {
+            border-left: none;
+            }
+
+            
             
             .pagex{
                 font-size:7px;
@@ -262,13 +282,18 @@ module.exports =  {
             htmlContent += `
             <div class="record-group" style="width:100%;">
                 <br>
-                <table border="1">
+                <table class="blueTable">
+                <thead>
                 <tr>
+
                 <th>Rider Information</th>
                 <th>Track No.</th>
                 <th>Reason</th>
                 <th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
-                </tr>`;
+                </tr>
+
+                <thead>
+                <tbody>`;
                 
             const group = rows.slice(i, i + recordsPerPage);
 
@@ -290,7 +315,9 @@ module.exports =  {
             });
 
             htmlContent += `
-                </table></div>`;
+                </tbody>    
+                </table>
+                </div>`;
 
 
             // Add page break unless it's the last group
@@ -299,23 +326,20 @@ module.exports =  {
         }
 
         htmlContent += `
-        <table>
-        <tr>
-            <td align=right >
+        <div class="mt-2" style="text-align:right">
             <b>GRAND TOTAL :</b> &nbsp;&nbsp;&nbsp;
             &nbsp;&nbsp;&nbsp;
             &nbsp;&nbsp;&nbsp;
             &nbsp;&nbsp;&nbsp;
             &nbsp;&nbsp;&nbsp;
-            <b>${totalFormatted}</b>&nbsp;&nbsp;&nbsp;
-            </td>
-        </tr>
-        </table>
+            <b>${totalFormatted}</b>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+        </div>
+
         </body>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-        </html>
-        `;
+        </html>`;
 
         let options = {
             format: "A4",
