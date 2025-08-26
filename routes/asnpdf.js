@@ -90,7 +90,7 @@ module.exports =  {
         
 
         const totalRecords = rows.length;
-        const recordsPerPage = 24;
+        const recordsPerPage = 20;
         const totalPages = Math.ceil(totalRecords / recordsPerPage) + 1;
 
         // Load logo as base64
