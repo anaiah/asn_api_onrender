@@ -187,7 +187,7 @@ module.exports =  {
 
         //=========GENERATE THE FIRST PAGE 
         htmlContent += `
-        <div class="pagex">
+        <div class="pagex ">
                 <div  class="mb-2">
                     <div style="text-align:center"> 
                         <img src="data:image/png;base64,${logoImage}" height="29px" /><br>
@@ -245,13 +245,14 @@ module.exports =  {
                     <br><br><br><br><br>
 
                     <p style="width:45% ; display: table;">
-                        <span style="display: table-cell; width:45%; border-top: 1px solid black;">
-                        &nbsp;&nbsp;&nbsp;<b>(mm/dd/yyyy) Taguig City, Philippines</b></span>
+                        <span style="text-align:center; display: table-cell; width:45%; border-top: 1px solid black;">
+                        <b>(mm/dd/yyyy) Taguig City, Philippines</b></span>
                     </p>
                     <br><br><br><br>
 
-                    <p style="width:55% ; display: table;">
-                        <span style="display: table-cell; width:55%; border-top: 1px solid black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Pangalan at Lagda ng Employee / Contractor</b></span>
+                    <p style="width:45% ; display: table;">
+                        <span style="text-align:center; display: table-cell; width:45%; border-top: 1px solid black;">
+                        <b>Pangalan at Lagda ng Employee / Contractor</b></span>
                         
                     </p>
                 </div>
