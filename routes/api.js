@@ -1054,11 +1054,12 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 		// Build the HTML table for output
 		let xtable = `
 		<h2>(${region.toUpperCase()}) </h2>
-		<table class='table' width='60%'>
+
+		<table class='blueTable'  >
 			<thead>
 			<tr>
 				<th>Rider</th>
-				<th align='right'>Amount</th>
+				<th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
 			</tr>
 			</thead>
 			<tbody>`;
@@ -1091,7 +1092,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 				${xpdfbutton}&nbsp;
 				
 				</td>
-				<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}</b></td>
+				<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
 			</tr>`;
 		});// ===end results.forEach
 
@@ -1104,10 +1105,10 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 			</tr>
 			<tr>
 				<td colspan='2'>
-				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;Download ALL PDF</button>
-				<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;Download PDF</button>
+				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
+				<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD PDF</button>
 					<!-- Continuation from previous code snippet -->
-				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;Close</button>
+				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
 				</td>
 			</tr>
 			</tbody>
@@ -1399,7 +1400,7 @@ router.get('/getbatch', async(req,res)=>{
 
 
 
-//======= CHECK PDF FIRST BEFORE CREATING ==============
+//======= THIS IS THE MOST IMPORTANT ROUTE OF ALL, CREATING PDF -- CHECK PDF FIRST BEFORE CREATING ==============
 router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 
 	const {grp_id, whois, batch, xbatch} = req.params;

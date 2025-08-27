@@ -84,7 +84,7 @@ module.exports =  {
 
         //if(numOption > 1){
             for( x=1; x <= numOption; x++){
-                aAmt.push( parseInt(totalFixed) / x)
+                aAmt.push( parseFloat(totalFixed) / x)
             }
 
             nSpace = nSpace - numOption 
