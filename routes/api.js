@@ -134,7 +134,9 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 		const {uid,pwd} = req.params
 
 		const sql =`SELECT a.id,a.full_name, 
-			a.email, GROUP_CONCAT(distinct a.region) as region, 
+			a.email, 
+			GROUP_CONCAT(distinct a.region) as region,
+			GROUP_CONCAT(distinct a.xregion) as xregion,
 			a.grp_id,a.pic 
 			from asn_users a 
 			WHERE a.email=? and a.pwd=?` 
@@ -163,6 +165,7 @@ router.get('/loginpost/:uid/:pwd',async(req,res)=>{
 					ip_addy :   null,
 					id      :   data[0].id,
 					region  :   data[0].region,
+					xregion :   data[0].xregion,
 					found   :   true
 				})
 			}
@@ -663,20 +666,19 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 
 //==========TOP 5 HUB 
 router.get('/gethub/:region/:grpid/:email', async (req, res) => {
-  
-  let sql;
+  const { region, grpid, email } = req.params; // Use destructuring
+  console.log('riderhub', region);
 
   try {
-    if (req.params.region !== 'ALL') {
-      let sqlIns = '';
-      switch (req.params.grpid) {
-        case "6": // head coord
-          sqlIns = ` AND a.head_coordinator_email = '${req.params.email}' `;
-          break;
-        case "7": // coord
-          sqlIns = ` AND a.coordinator_email = '${req.params.email}' `;
-          break;
-      }
+    let sql;
+    let params = [];
+
+    if (region !== 'ALL') {
+      // Scenario 1: Specific region(s)
+      const regionsArray = region.split(',');
+      const sanitizedRegions = regionsArray.map(region => region.trim());
+
+      // SQL with parameterized query.
       sql = `
         SELECT  
           b.hubs_location AS hub, 
@@ -684,13 +686,17 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
           COALESCE(ROUND(SUM(b.amount),2),0) AS total
         FROM asn_claims b 
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
-		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-        ${sqlIns}  
-		AND b.transaction_year='2025'
+        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+        AND a.region IN (?)
+        AND b.transaction_year='2025'
         GROUP BY b.hubs_location, a.region
         ORDER BY total DESC LIMIT 5;
-      `
+      `;
+      params = [sanitizedRegions];  // Pass the array of regions as a parameter
+
+      console.log(sql, sanitizedRegions); // Log the SQL and parameters
     } else {
+      // Scenario 2: All regions
       sql = `
         SELECT  
           b.hubs_location AS hub, 
@@ -702,23 +708,24 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
           AND b.transaction_year='2025'
         GROUP BY b.hubs_location, a.region
         ORDER BY total DESC LIMIT 5;
-      `
+      `;
+      // No parameters needed for this query
+      console.log(sql);
+    }
+
+    // Execute the query
+    const [results] = await db.query(sql, params);
+
+    if (!results || results.length === 0) {
+      return res.status(200).send('** No Record Yet! ***'); // Use return
     }
 
     console.log('=======Top 5 Hub processing...');
 
-    // get connection from pool
-    const [results] = await db.query(sql);
-    
-	if (!results || results.length === 0) {
-      res.status(200).send('** No Record Yet! ***');
-      return;
-    }
-
     // Build your HTML table
-    let xtable = `<h2>(${req.params.region.toUpperCase()})</h2>
+    let xtable = `<h2>(${region.toUpperCase()})</h2>
     <div class="col-lg-8">
-      <table class="table"> 
+      <table class="blueTable"> 
         <thead>
           <tr>
             <th>Region</th>
@@ -727,13 +734,15 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
           </tr>
         </thead>
         <tbody>`;
+
     results.forEach(row => {
       xtable += `<tr>
-        <td>${row.region}</td>
-        <td>${row.hub}</td>
-        <td align='right'><b>${addCommas(parseFloat(row.total).toFixed(2))}</b></td>
+        <td><b>${row.region}</b></td>
+        <td><b>${row.hub}</b></td>
+        <td align='right'><b>${addCommas(parseFloat(row.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
       </tr>`;
     });
+
     xtable += `</tbody></table></div>`;
 
     res.status(200).send(xtable);
@@ -750,72 +759,76 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
 // const db = require('../db'); 
 
 router.get('/getrider/:region/:grpid/:email', async (req, res) => {
-  let sql;
+  const { region, grpid, email } = req.params;
 
   try {
-    // Build your SQL
-    if (req.params.region !== 'ALL') {
-      let sqlIns = '';
-      switch (req.params.grpid) {
-        case "6": // head coord
-          sqlIns = ` AND a.head_coordinator_email = '${req.params.email}' `;
-          break;
-        case "7": // coord
-          sqlIns = ` AND a.coordinator_email = '${req.params.email}' `;
-          break;
+    let sql;
+    let params = [];
+
+    if (region !== 'ALL') {
+      const raw = decodeURIComponent(region || '');
+      const regions = raw.split(',').map(r => r.trim()).filter(Boolean);
+
+      if (!regions.length) {
+        return res.json([]);
       }
+
+      //Parameterized query approach
       sql = `
         SELECT b.full_name AS rider, 
-               b.emp_id, 
-               b.hubs_location AS hub, 
-               a.region, 
-               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-               b.pdf_batch, 
-               b.batch_file,
-			   b.transaction_year
+          b.emp_id, 
+          b.hubs_location AS hub, 
+          a.region, 
+          COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+          b.pdf_batch, 
+          b.batch_file,
+		  b.transaction_year
         FROM asn_claims b 
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
-		WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-        ${sqlIns}
-        AND b.transaction_year='2025'
+        WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+        AND a.region IN (?)
+		AND b.transaction_year='2025'
         GROUP BY b.full_name,b.emp_id
         ORDER BY total DESC LIMIT 5;
       `;
+      params = [ [ ...regions ] ];
+
+      console.log(sql, [regions]);
     } else {
       sql = `
         SELECT b.full_name AS rider, 
-               b.emp_id, 
-               b.hubs_location AS hub, 
-               a.region, 
-               COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-               b.pdf_batch, 
-               b.batch_file,
-			   b.transaction_year
+          b.emp_id, 
+          b.hubs_location AS hub, 
+          a.region, 
+          COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+          b.pdf_batch, 
+          b.batch_file,
+		  b.transaction_year
         FROM asn_claims b
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-          AND b.transaction_year='2025'
+		AND b.transaction_year='2025'
         GROUP by b.full_name, b.emp_id 		
         ORDER BY total DESC LIMIT 5;
       `;
+      console.log(sql);
     }
-	
-	console.log('=======Top 5 Rider processing...' );
 
-    // Simply use db.query() because `db` is already your pool object
-    const [results] = await db.query(sql);
+    const [results] = await db.query(sql, params);
+
+    console.log('=======Top 5 Rider processing...' );
 
     if (!results || results.length === 0) {
       return res.status(200).send('** No Record Yet! ***');
     }
 
     let xtable = `<div class="col-lg-8">
-      <h2>(${req.params.region.toUpperCase()})</h2>
-      <table class="table">
+      <h2>(${region.toUpperCase()})</h2>
+      <table class="blueTable">
         <thead>
           <tr>
             <th>Rider</th>
-            <th align='right'>Amount</th>
+            <th>Amount</th>
           </tr>
         </thead>
         <tbody>`;
@@ -823,7 +836,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
     results.forEach(row => {
       xtable += `<tr>
         <td>
-          ${row.rider}<br>
+          <b>${row.rider}</b><br>
           ${row.emp_id}<br>
           (${row.region}, ${row.hub})<br>
 		  ${row.transaction_year}
