@@ -1214,7 +1214,9 @@ router.get('/getchart', async (req, res) => {
 					-- Sum where pdf_batch is not empty
 					ROUND(SUM(CASE WHEN (c.pdf_batch <> '' or pdf_batch is not null) THEN c.amount END), 0) AS with_atd,
 					-- Sum where pdf_batch is empty
-					ROUND(SUM(CASE WHEN (c.pdf_batch = '' or c.pdf_batch is null) THEN c.amount END), 0) AS no_atd
+					ROUND(SUM(CASE WHEN (c.pdf_batch = '' or c.pdf_batch is null) THEN c.amount END), 0) AS no_atd,
+					ROUND(SUM(CASE WHEN signed = 1 THEN c.amount ELSE 0 END), 0) AS xsigned
+					
 				FROM
 					asn_claims c
 				LEFT JOIN
