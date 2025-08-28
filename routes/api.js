@@ -816,7 +816,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
 
     const [results] = await db.query(sql, params);
 
-    console.log('=======Top 5 Rider processing...' );
+    console.log('=======Top 5 Rider processing v.2 ...' );
 
     if (!results || results.length === 0) {
       return res.status(200).send('** No Record Yet! ***');
@@ -1037,99 +1037,103 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 		const [results] = await db.query(sql);
 
 		if (!results || results.length === 0) {
-			return res.status(200).send('**No Record Found***');
-		}
+			res.status(200).json({text:'**No Record Found***', xdata:results});
+		}else{
+			console.log('===get Employee id/name Results:', results.length);
+			let totalAmt = 0;
+			
+			results.forEach(r => {
+				r.total = parseFloat(r.total).toFixed(2);
+				totalAmt += parseFloat(r.total);
+			});
 
-		console.log('===get Employee id/name Results:', results.length);
-		let totalAmt = 0;
+			/**** take out sorting of totals
+			// Sort by:
+			results.sort((a, b) => {
+			// descending for total
+			if (b.total !== a.total) {
+				return b.total - a.total;
+			}
+			// ascending for emp_id
+			return a.emp_id.localeCompare(b.emp_id);
+			// add more criteria if needed
+			});
+			****/ 
+			const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
+			const curr_date = strdates();
+			let xpdfbatch, xpdfbutton;
+			
+			// Build the HTML table for output
+			let xtable = `
+			<h2>(${region.toUpperCase()}) </h2>
+
+			<table class='blueTable'  >
+				<thead>
+				<tr>
+					<th>Rider</th>
+					<th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
+				</tr>
+				</thead>
+				<tbody>`;
+
+			results.forEach(r => {
+
+				if( r.pdf_batch!==null ){
+
+					xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
+					Downloaded by: ${(r.downloaded_by==null?'NO ID':r.downloaded_by)}`
+					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-primary btn-sm'>RE-PRINT ${r.pdf_batch}</a>
+					<a href='javascript:void(0)' onclick="asn.resetPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-danger btn-sm'>RESET ${r.pdf_batch}</a>
+					`
+					
+				}else{
+					xpdfbatch = "ATD PDF NOT YET PROCESSED"	
+					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-primary btn-sm'>Add to Print</a>`
+				}//eif
+
+				xtable += `<tr>
+					<td>
+					Rec# ${r.id}<br>
+					Rec Count: ${r.id_count}<br>
+					<b>${r.rider.toUpperCase()}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
+					${r.emp_id}<br>
+					(${r.region || 'NO REGION'}, ${r.hub})<br>
+					${r.batch_file}<br>
+					${r.transaction_year}<br>
+					<span style='color:red'>${xpdfbatch}</span><br>
+					${xpdfbutton}&nbsp;
+					
+					</td>
+					<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
+				</tr>`;
+			});// ===end results.forEach
+
+
+
+			xtable += `
+				<tr>
+					<td align='right'><b>TOTAL :</b></td>
+					<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}</b></td>
+				</tr>
+				<tr>
+					<td colspan='2'>
+					<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
+					<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD PDF</button>
+						<!-- Continuation from previous code snippet -->
+					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
+					</td>
+				</tr>
+				</tbody>
+				</table>
+				`;
+
+				// Send the constructed HTML as response
+				res.status(200).json({text:xtable, xdata:results});
+
+		}//*****************endif */
+
 		
-		results.forEach(r => {
-			r.total = parseFloat(r.total).toFixed(2);
-			totalAmt += parseFloat(r.total);
-		});
-
-		/**** take out sorting of totals
-		// Sort by:
-		results.sort((a, b) => {
-		// descending for total
-		if (b.total !== a.total) {
-			return b.total - a.total;
-		}
-		// ascending for emp_id
-		return a.emp_id.localeCompare(b.emp_id);
-		// add more criteria if needed
-		});
-		****/ 
-		const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
-		const curr_date = strdates();
-		let xpdfbatch, xpdfbutton;
 		
-		// Build the HTML table for output
-		let xtable = `
-		<h2>(${region.toUpperCase()}) </h2>
-
-		<table class='blueTable'  >
-			<thead>
-			<tr>
-				<th>Rider</th>
-				<th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
-			</tr>
-			</thead>
-			<tbody>`;
-
-		results.forEach(r => {
-
-			if( r.pdf_batch!==null ){
-
-				xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
-				Downloaded by: ${(r.downloaded_by==null?'NO ID':r.downloaded_by)}`
-				xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-primary btn-sm'>RE-PRINT ${r.pdf_batch}</a>
-				 <a href='javascript:void(0)' onclick="asn.resetPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-danger btn-sm'>RESET ${r.pdf_batch}</a>
-				`
-				
-			}else{
-				xpdfbatch = "ATD PDF NOT YET PROCESSED"	
-				xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-primary btn-sm'>Add to Print</a>`
-			}//eif
-
-			xtable += `<tr>
-				<td>
-				Rec# ${r.id}<br>
-				Rec Count: ${r.id_count}<br>
-				<b>${r.rider.toUpperCase()}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
-				${r.emp_id}<br>
-				(${r.region || 'NO REGION'}, ${r.hub})<br>
-				${r.batch_file}<br>
-				${r.transaction_year}<br>
-				<span style='color:red'>${xpdfbatch}</span><br>
-				${xpdfbutton}&nbsp;
-				
-				</td>
-				<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
-			</tr>`;
-		});// ===end results.forEach
-
-
-
-		xtable += `
-			<tr>
-				<td align='right'><b>TOTAL :</b></td>
-				<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}</b></td>
-			</tr>
-			<tr>
-				<td colspan='2'>
-				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
-				<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD PDF</button>
-					<!-- Continuation from previous code snippet -->
-				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
-				</td>
-			</tr>
-			</tbody>
-			</table>
-			`;
-
-		// Send the constructed HTML as response
-		res.status(200).json({text:xtable, xdata:results});
 	} catch (err) {
 		console.error('Error processing request:', err);
 		res.status(500).json({ error: 'Error' });
