@@ -1113,7 +1113,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 			xtable += `
 				<tr>
 					<td align='right'><b>TOTAL :</b></td>
-					<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}</b></td>
+					<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
 				</tr>
 				<tr>
 					<td colspan='2'>
