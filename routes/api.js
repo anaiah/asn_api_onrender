@@ -125,8 +125,91 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 		
 });
 
+//=======================THIS IS FOR UPLOADING ATD STATUS =================//
+// Route to handle the file upload
+const ExcelJS = require('exceljs')
 
-//========login post
+router.post('/upload-atd-status', upload.single('excelFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded.' });
+    }
+
+    const excelFile = req.file.buffer; // The Excel file is in memory as a buffer
+
+    // 1. Create a temporary table
+    const tempTableName = `temp_atd_status_${Date.now()}`; // Unique table name
+    
+	//--Adjust the data type and length as needed
+	//-- Add other columns as necessary based on your Excel file's structure
+	// Create an index for faster joining
+	await db.query(`
+      CREATE TEMPORARY TABLE ${tempTableName} (
+        atd_number VARCHAR(15) NOT NULL,  
+		signed TINYINT(1) DEFAULT 0, 
+        INDEX (atd_number) 
+      )`
+	);
+
+    // 2. Parse the Excel file and insert data into the temporary table
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(excelFile);
+
+    const worksheet = workbook.getWorksheet(1); // Assuming data is in the first worksheet
+    const rows = [];
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) { // Skip the header row
+        const atd_number = row.getCell(1).value; // Assuming atd_number is in the first column
+        
+		// Extract other column values as needed.
+		const signed = row.getCell(2).value;
+
+        if (atd_number) { // Only insert if atd_number is not empty
+          rows.push([atd_number, signed]);  // Add other values to the array
+        }
+      }
+    });
+
+
+    // Bulk insert data into the temporary table
+    if (rows.length > 0) {
+      const insertQuery = `INSERT INTO ${tempTableName} (atd_number, signed) VALUES ?`; // Add other columns to insert
+      await db.query(insertQuery, [rows]);
+    }
+
+
+    // 3. Join the temporary table with asn_claims and update asn_claims.signed = 1
+    const updateQuery = `
+      UPDATE asn_claims as ac
+	  inner join ${tempTableName} as tt 
+	  on ac.pdf_batch = tt.atd_number
+      SET ac.signed = tt.signed
+    `;
+    await db.query(updateQuery);
+
+    // 4. Delete the temporary table
+    await db.query(`DROP TEMPORARY TABLE IF EXISTS ${tempTableName}`);
+
+    res.json({ message: 'File uploaded and database updated successfully.' });
+
+  } catch (error) {
+    console.error('Error processing upload:', error);
+    // Delete the temporary table if an error occurs
+    if (tempTableName) {
+        try {
+            await db.query(`DROP TEMPORARY TABLE IF EXISTS ${tempTableName}`);
+        } catch (dropError) {
+            console.error("Error dropping temporary table:", dropError);
+        }
+    }
+    res.status(500).json({ error: `Error processing upload: ${error.message}` });
+  }
+});
+
+
+
+//======================LOGIN POST//=====================================//
 router.get('/loginpost/:uid/:pwd',async(req,res)=>{
     console.log('firing login=>',req.params.uid,req.params.pwd)
     	
@@ -586,88 +669,70 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 
 ///===== get update grid total claims
 router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
-	console.log('===FIRED CLAIMSUPDATE()====')
-	if(req.params.region !== 'ALL'){
-
-		switch( req.params.grpid){
-			case "6": //head coord
-				sqljoin = ` head_coordinator_email `
-				sqlins = ` and b.head_coordinator_email = '${req.params.email}' `
-			break
-
-			case "7": //coord
-				sqljoin = ` coordinator_email `
-				sqlins = ` and b.coordinator_email = '${req.params.email}' `
-			break
-
-		}//endcase
-
-
-		sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		round(sum(a.amount)) as total
-		from asn_claims a
-		 join asn_spx_hubs b 
-		on b.hub = a.hubs_location
-		where (a.pdf_batch is null or a.pdf_batch = "") 
-		${sqlins}
-		and a.transaction_year='2025'
-		group by a.uploaded_at
-        order by a.uploaded_at DESC`
-
-		// sql = `select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		// round(sum(a.amount)) as total
-		// from asn_claims a
-		// join (select distinct hub, ${sqljoin} from asn_spx_hubs ) b
-		// on a.hubs_location = b.hub
-		// where (a.pdf_batch is null or a.pdf_batch = "") and a.transaction_year='2025'
-		// ${sqlins}
-		// group by a.uploaded_at
-        // order by a.uploaded_at DESC`
-	}else{
-
-		sql = `
-		select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-		round(sum(a.amount)) as total
-		from asn_claims a
-		where (a.pdf_batch is null or a.pdf_batch = "")
-		and a.transaction_year = '2025'
-		group by a.uploaded_at
-		order by a.uploaded_at DESC`
-		
-	}
 	
-	//console.log(sql)
-	connectDb()
-	.then((xdb)=>{
-		xdb.query(sql,(error,result) => {	
-			//console.log(error,results)
-			if ( result[0].length == 0) {   //data = array 
-				console.log('no rec')
-				closeDb(xdb);//CLOSE connection
-		
-				res.status(500).send('** No Record Yet! ***')
-		
-			}else{ 
-				
-				//xtable+=`<input type='text' hidden id='gxtotal' name='gxtotal' value='${addCommas(parseFloat(xtotal).toFixed(2))}'>`
+	const { region, grpid, email } = req.params; // Use destructuring
+  
+	console.log('===FIRED CLAIMSUPDATE()====')
 
-				closeDb(xdb);//CLOSE connection
-			
-				res.status(200).json(result)				
-				
-			}
+	try {
+		let sql;
+		let params = [];
 
-		})
-	}).catch((error)=>{
-		res.status(500).json({error:'Error'})
-	}) 
+		if (region !== 'ALL') {
+			// Scenario 1: Specific region(s)
+			const regionsArray = region.split(',');
+			const sanitizedRegions = regionsArray.map(region => region.trim());
+
+			// SQL with parameterized query.
+			sql = `
+				select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
+				round(sum(a.amount)) as total
+				from asn_claims a
+				join asn_spx_hubs b 
+				on b.hub = a.hubs_location
+				where (a.pdf_batch is null or a.pdf_batch = "") 
+				AND b.region IN (?)
+				and a.transaction_year='2025'
+				group by a.uploaded_at
+				order by a.uploaded_at DESC
+			`;
+			params = [sanitizedRegions];  // Pass the array of regions as a parameter
+
+			//console.log(sql, sanitizedRegions); // Log the SQL and parameters
+		} else {
+			// Scenario 2: All regions
+			sql = `
+				select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
+				round(sum(a.amount)) as total
+				from asn_claims a
+				where (a.pdf_batch is null or a.pdf_batch = "")
+				and a.transaction_year = '2025'
+				group by a.uploaded_at
+				order by a.uploaded_at DESC`
+			;
+			// No parameters needed for this query
+			//console.log(sql);
+		}
+
+		// Execute the query
+		const [results] = await db.query(sql, params);
+
+		if (!results || results.length === 0) {
+		return res.status(200).send('** No Record Yet! ***'); // Use return
+		}
+		
+		res.status(200).send(results);
+	} catch (err) {
+		console.error('Error processing request:', err);
+		res.status(500).json({ error: 'Error' });
+	}
 
 })
 
 //==========TOP 5 HUB 
 router.get('/gethub/:region/:grpid/:email', async (req, res) => {
   const { region, grpid, email } = req.params; // Use destructuring
-  console.log('riderhub', region);
+  console.log('====gethub() ', region);
 
   try {
     let sql;
@@ -766,12 +831,9 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
     let params = [];
 
     if (region !== 'ALL') {
-      const raw = decodeURIComponent(region || '');
-      const regions = raw.split(',').map(r => r.trim()).filter(Boolean);
-
-      if (!regions.length) {
-        return res.json([]);
-      }
+       // Scenario 1: Specific region(s)
+      const regionsArray = region.split(',');
+      const sanitizedRegions = regionsArray.map(region => region.trim());
 
       //Parameterized query approach
       sql = `
@@ -791,9 +853,10 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         GROUP BY b.full_name,b.emp_id
         ORDER BY total DESC LIMIT 5;
       `;
-      params = [ [ ...regions ] ];
+    
+      params = [sanitizedRegions];  // Pass the array of regions as a parameter
 
-      console.log(sql, [regions]);
+      console.log(sql, sanitizedRegions); // Log the SQL and parameter
     } else {
       sql = `
         SELECT b.full_name AS rider, 
