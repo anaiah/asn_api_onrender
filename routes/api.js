@@ -127,7 +127,7 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
 
 //=======================THIS IS FOR UPLOADING ATD STATUS =================//
 // Route to handle the file upload
-const ExcelJS = require('exceljs')
+const ExcelJS = require('exceljs') //<------------IMPORTANT EXCEL LIBRARY ------------->//
 
 router.post('/upload-atd-status', upload.single('excelFile'), async (req, res) => {
   try {
@@ -137,9 +137,31 @@ router.post('/upload-atd-status', upload.single('excelFile'), async (req, res) =
 
     const excelFile = req.file.buffer; // The Excel file is in memory as a buffer
 
+	console.log( req.file )
+
+	return res.status(500)
+
     // 1. Create a temporary table
     const tempTableName = `temp_atd_status_${Date.now()}`; // Unique table name
     
+	let sqlins, sqlfield
+
+	switch( selectedAction){
+		case "Signed":
+			sqlins = " SET ac.signed = tt.signed, signed_batch = "
+		break;
+		
+		case "Signed":
+
+		break;
+		
+		case "Signed":
+
+		break;
+
+	}
+
+
 	//--Adjust the data type and length as needed
 	//-- Add other columns as necessary based on your Excel file's structure
 	// Create an index for faster joining
@@ -178,6 +200,9 @@ router.post('/upload-atd-status', upload.single('excelFile'), async (req, res) =
       await db.query(insertQuery, [rows]);
     }
 
+	//CHECK WHAT TABLE TO UPDATE
+	const selectedAction = req.body.atdstatus_action; // Get the selected value
+	
 
     // 3. Join the temporary table with asn_claims and update asn_claims.signed = 1
     const updateQuery = `
@@ -1497,6 +1522,8 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 
 			const myObjects = req.body.myObjects
 
+			////console.log('mybojects ', myObjects)
+
 			if(!Array.isArray(myObjects) || myObjects.length === 0) {
 				return res.status(400).json({ error: 'Invalid input data' });
 			}
@@ -1507,15 +1534,16 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 			let values = [];
 
 			for (const obj of myObjects) {
-				if (obj.name && obj.empid) { // Validate that both properties exist
+				if (obj.rider && obj.empid) { // Validate that both properties exist
 					conditions.push('(full_name = ? AND emp_id = ?)');
-					updateconditions.push(`(full_name = '${obj.name}' and emp_id = '${obj.empid}')`); // Prepare for update
-					values.push(obj.name, obj.empid); // Add the values in the correct order
+					updateconditions.push(`(full_name = '${obj.rider}' and emp_id = '${obj.empid}')`); // Prepare for update
+					values.push(obj.rider, obj.empid); // Add the values in the correct order
 				} else {
 					//console.warn("Skipping object with missing name or id:", obj);
 				}
 			}
 
+			/////console.log( 'conditions ', conditions)
 			//Combine the conditions with OR
 			let whereClause = conditions.length > 0 ? conditions.join(' OR ') : '1=0';  // If conditions is empty return 1=0 which will always return nothing
 
@@ -1528,7 +1556,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 				category,
 				hubs_location as hub, 
 				track_number as track,
-				claims_reason as reason,
+				claims_reason as reason, 
 				round(SUM(amount),2) as total,
 				pdf_batch
 				FROM asn_claims WHERE ${whereClause}
