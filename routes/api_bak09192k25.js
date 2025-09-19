@@ -1545,9 +1545,9 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 
 			for (const obj of myObjects) {
 				if (obj.rider && obj.empid) { // Validate that both properties exist
-					conditions.push('(full_name = ? )');
-					updateconditions.push(`(full_name = '${obj.rider}' )`); // Prepare for update
-					values.push(obj.rider); // Add the values in the correct order
+					conditions.push('(full_name = ? AND emp_id = ?)');
+					updateconditions.push(`(full_name = '${obj.rider}' and emp_id = '${obj.empid}')`); // Prepare for update
+					values.push(obj.rider, obj.empid); // Add the values in the correct order
 				} else {
 					//console.warn("Skipping object with missing name or id:", obj);
 				}
@@ -1570,7 +1570,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 				round(SUM(amount),2) as total,
 				pdf_batch
 				FROM asn_claims WHERE ${whereClause}
-				GROUP BY full_name,track_number,pdf_batch`; // Use parameterized query
+				GROUP BY emp_id, full_name,track_number,pdf_batch`; // Use parameterized query
 				
 			// Execute the query
 			const [rows, fields] = await db.query(sql, values );// Pass values as an array
