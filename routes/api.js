@@ -1047,7 +1047,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 		sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
 	}
 
-	//filter type
+	//=========filter type
 	if (filter === 'new') {
 		sqlfilter = ' b.pdf_batch IS NULL' 
 		sqlgroup = ' b.batch_file '
@@ -1115,7 +1115,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 				WHERE ${sqlzins}
 					AND ( ${sqlfilter} )
 					AND b.transaction_year='2025'
-				GROUP BY b.full_name, ${sqlgroup}
+				GROUP BY ${sqlgroup}
 				ORDER BY b.batch_file, b.full_name;`;
 		}
 
