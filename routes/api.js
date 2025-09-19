@@ -1222,8 +1222,6 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 			let xbtn = `
 				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
 				<!-- Continuation from previous code snippet -->
-				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
-					
 			`
 				// Send the constructed HTML as response
 				res.status(200).json({text:xtable, xdata:results, btn: xbtn});
