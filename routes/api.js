@@ -1166,6 +1166,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 
 			results.forEach(r => {
 
+				//==== COPY OF THIS IS IN gridtab2.js===========//
 				if( r.pdf_batch!==null ){
 
 					xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
@@ -1176,7 +1177,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 					
 				}else{
 					xpdfbatch = "ATD PDF NOT YET PROCESSED"	
-					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-primary btn-sm'>Add to Print</a>`
+					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-danger btn-sm'>Remove</a>`
 				}//eif
 
 				xtable += `<tr>
@@ -1215,8 +1216,14 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 				</table>
 				`;
 
+			let xbtn = `
+				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
+				<!-- Continuation from previous code snippet -->
+				<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
+					
+			`
 				// Send the constructed HTML as response
-				res.status(200).json({text:xtable, xdata:results});
+				res.status(200).json({text:xtable, xdata:results, btn: xbtn});
 
 		}//*****************endif */
 
