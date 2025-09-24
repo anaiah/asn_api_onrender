@@ -1229,7 +1229,6 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 		}//*****************endif */
 
 		
-		
 	} catch (err) {
 		console.error('Error processing request:', err);
 		res.status(500).json({ error: 'Error' });
@@ -1577,7 +1576,8 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 			//console.log( sql, newbatch, rows)
 
 			//========NECESSARY TO UPDATE WHO CREATED/DOWNLOADED THE ATD PDF ================
-			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE ${updateconditions.join(' OR ')}`; // Use the update conditions
+			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE (${updateconditions.join(' OR ')}) and (pdf_batch IS NULL)`; // Use the update conditions
+			
 			console.log('==UPDATING PDF BATCH AND WHO UPDATED==', newbatch )
 			
 			// // Step 1: Update download_empid with whois
