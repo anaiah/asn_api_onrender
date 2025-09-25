@@ -1573,10 +1573,10 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 			const [rows, fields] = await db.query(sql, values );// Pass values as an array
 
 			const newbatch = batch; // Get the new batch number	
-			//console.log( sql, newbatch, rows)
+			//console.log( sql, newbatch, rows) 
 
 			//========NECESSARY TO UPDATE WHO CREATED/DOWNLOADED THE ATD PDF ================
-			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE (${updateconditions.join(' OR ')}) and (pdf_batch IS NULL)`; // Use the update conditions
+			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE (${updateconditions.join(' OR ')}) and (pdf_batch IS NULL) and (transaction_year='2025')`; // Use the update conditions
 			
 			console.log('==UPDATING PDF BATCH AND WHO UPDATED==', newbatch )
 			
