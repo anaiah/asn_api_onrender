@@ -1566,7 +1566,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 				claims_reason as reason, 
 				round(SUM(amount),2) as total,
 				pdf_batch
-				FROM asn_claims WHERE ${whereClause}
+				FROM asn_claims WHERE ( ${whereClause} )  and (pdf_batch IS NULL) and (transaction_year='2025')
 				GROUP BY full_name,track_number,pdf_batch`; // Use parameterized query
 				
 			// Execute the query
