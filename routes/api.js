@@ -1263,7 +1263,7 @@ router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async 
     if (hub !== 'blank') {
         sqlConditions.push(`b.hubs_location LIKE ?`);
         queryParams.push(`%${hub}%`); // Safely injects the wildcards into the parameterized query
-    }
+    } 
 
     // 3. Add Fixed transaction year constraint
     sqlConditions.push(`b.transaction_year = ?`);
