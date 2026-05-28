@@ -74,6 +74,8 @@ const dbconfig  ={
 	database: 'u899193124_asianow'
 }
 
+const currentYear = new Date().getFullYear(); // Gets 2026 (or whatever the current year is)
+
 // Upload endpoint
 router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) => {
 	
@@ -637,7 +639,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			left join asn_spx_hubs b on a.hubs_location = b.hub  
 			where a.pdf_batch like 'ASN%' 
 			${sqlins}
-			and a.transaction_year='2025' 
+			and a.transaction_year='${currentYear}' 
 			group by a.pdf_batch
 			order by a.pdf_batch+0 desc;`
 		}else{
@@ -651,7 +653,7 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 			from asn_claims a 
 			left join asn_spx_hubs b on a.hubs_location = b.hub 
 			where a.pdf_batch like 'ASN%' 
-			and a.transaction_year='2025' 
+			and a.transaction_year='${currentYear}' 
 			group by a.pdf_batch
 			order by a.pdf_batch+0 desc;`
 		}
@@ -717,7 +719,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 				on b.hub = a.hubs_location
 				where (a.pdf_batch is null or a.pdf_batch = "") 
 				AND b.region IN (?)
-				and a.transaction_year='2025'
+				and a.transaction_year='${currentYear}'
 				group by a.uploaded_at
 				order by a.uploaded_at DESC
 			`;
@@ -731,7 +733,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 				round(sum(a.amount)) as total
 				from asn_claims a
 				where (a.pdf_batch is null or a.pdf_batch = "")
-				and a.transaction_year = '2025'
+				and a.transaction_year = '${currentYear}'
 				group by a.uploaded_at
 				order by a.uploaded_at DESC`
 			;
@@ -778,7 +780,7 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
         AND a.region IN (?)
-        AND b.transaction_year='2025'
+        AND b.transaction_year='${currentYear}'
         GROUP BY b.hubs_location, a.region
         ORDER BY total DESC LIMIT 5;
       `;
@@ -795,7 +797,7 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
         FROM asn_claims b 
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-          AND b.transaction_year='2025'
+          AND b.transaction_year='${currentYear}'
         GROUP BY b.hubs_location, a.region
         ORDER BY total DESC LIMIT 5;
       `;
@@ -874,7 +876,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
         AND a.region IN (?)
-		AND b.transaction_year='2025'
+		AND b.transaction_year='${currentYear}'
         GROUP BY b.full_name,b.emp_id
         ORDER BY total DESC LIMIT 5;
       `;
@@ -895,7 +897,7 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         FROM asn_claims b
         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		AND b.transaction_year='2025'
+		AND b.transaction_year='${currentYear}'
         GROUP by b.full_name, b.emp_id 		
         ORDER BY total DESC LIMIT 5;
       `;
@@ -1091,7 +1093,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 				WHERE ${sqlzins}
 					${sqlins}
 					AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
-					AND b.transaction_year='2025'
+					AND b.transaction_year='${currentYear}'
 				GROUP BY b.emp_id,b.full_name,b.pdf_batch  
 				ORDER BY b.batch_file, b.full_name;`;
 
@@ -1117,7 +1119,7 @@ router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, 
 				left join asn_users c on c.id = b.download_empid
 				WHERE ${sqlzins}
 					AND ( ${sqlfilter} )
-					AND b.transaction_year='2025'
+					AND b.transaction_year='${currentYear}'
 				GROUP BY ${sqlgroup}
 				ORDER BY b.batch_file, b.full_name;`;
 		}
@@ -1241,21 +1243,21 @@ router.get('/getchart', async (req, res) => {
 	console.log('===FIRING getchart() ====')
 	try {
 
-		const sql = `SELECT
-				( case when  b.region is  not null  then b.region  ELSE 'NO REGION' END )  as region ,
-					-- Sum where pdf_batch is not empty
-					ROUND(SUM(CASE WHEN (c.pdf_batch <> '' or pdf_batch is not null) THEN c.amount END), 0) AS with_atd,
-					-- Sum where pdf_batch is empty
-					ROUND(SUM(CASE WHEN (c.pdf_batch = '' or c.pdf_batch is null) THEN c.amount END), 0) AS no_atd,
-					ROUND(SUM(CASE WHEN signed = 1 THEN c.amount ELSE 0 END), 0) AS xsigned
-					
-				FROM
-					asn_claims c
-				LEFT JOIN
-					asn_spx_hubs b ON c.hubs_location = b.hub
-				WHERE c.transaction_year = '2025'	
-				GROUP BY
-					b.region;`
+		const sql = `SELECT 
+			(CASE WHEN b.region IS NOT NULL THEN b.region ELSE 'NO REGION' END) AS region, 
+			
+			-- Sum where pdf_batch is not empty (Returns 0 instead of NULL)
+			ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch <> '' OR c.pdf_batch IS NOT NULL) THEN c.amount END), 0), 0) AS with_atd, 
+			
+			-- Sum where pdf_batch is empty (Returns 0 instead of NULL)
+			ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch = '' OR c.pdf_batch IS NULL) THEN c.amount END), 0), 0) AS no_atd, 
+			
+			ROUND(SUM(CASE WHEN signed = 1 THEN c.amount ELSE 0 END), 0) AS xsigned 
+		FROM asn_claims c 
+		LEFT JOIN asn_spx_hubs b ON c.hubs_location = b.hub 
+		WHERE c.transaction_year = '${currentYear}' 
+		GROUP BY b.region;
+`
 
 		const [chartrow] = await db.query(sql);
 
@@ -1514,7 +1516,7 @@ router.get('/getbatch', async(req,res)=>{
 
 
 
-//======= THIS IS THE MOST IMPORTANT ROUTE OF ALL, CREATING PDF -- CHECK PDF FIRST BEFORE CREATING ==============
+//======= THIS IS THE MOST IMPORTANT ROUTE OF ALL, CREATING PDF / CREATE PDF-- CHECK PDF FIRST BEFORE CREATING ==============
 router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 
 	const {grp_id, whois, batch, xbatch} = req.params;
@@ -1566,7 +1568,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 				claims_reason as reason, 
 				round(SUM(amount),2) as total,
 				pdf_batch
-				FROM asn_claims WHERE ( ${whereClause} )  and (pdf_batch IS NULL) and (transaction_year='2025')
+				FROM asn_claims WHERE ( ${whereClause} )  and (pdf_batch IS NULL) and (transaction_year='${currentYear}')
 				GROUP BY full_name,track_number,pdf_batch`; // Use parameterized query
 				
 			// Execute the query
@@ -1576,7 +1578,7 @@ router.post('/printpdf/:grp_id/:whois/:batch/:xbatch', async(req, res)=>{
 			//console.log( sql, newbatch, rows) 
 
 			//========NECESSARY TO UPDATE WHO CREATED/DOWNLOADED THE ATD PDF ================
-			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE (${updateconditions.join(' OR ')}) and (pdf_batch IS NULL) and (transaction_year='2025')`; // Use the update conditions
+			let sql2 = 	`UPDATE asn_claims SET download_empid = ? , pdf_batch = ? WHERE (${updateconditions.join(' OR ')}) and (pdf_batch IS NULL) and (transaction_year='${currentYear}')`; // Use the update conditions
 			
 			console.log('==UPDATING PDF BATCH AND WHO UPDATED==', newbatch )
 			
