@@ -1035,209 +1035,375 @@ const getServerIp = () =>{
 
 
 //============search by id or name
-router.get('/getrecord/:enum/:ename/:region/:grpid/:email/:filter', async (req, res) => {
-	const { enum: emp_id, ename, region, grpid, email, filter} = req.params;
+// router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async (req, res) => {
+// 	const { enum: emp_id, ename, hub, region, grpid, email, filter} = req.params;
 
-	let sqlins = '', sqlzins = '',sqlfilter='', sqlgroup = ''
+// 	let sqlins = '', sqlzins = '',sqlfilter='', sqlgroup = ''
 
-	// Build search condition
-	if (ename !== 'blank' && emp_id !== 'blank') {
-		sqlzins = `(b.emp_id LIKE '%${emp_id}%' OR UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%')`;
-	} else if (emp_id !== 'blank') {
-		sqlzins = `b.emp_id = '${emp_id}'`;
-	} else if (ename !== 'blank') {
-		sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
-	}
+// 	// Build search condition
+// 	if (ename !== 'blank' && emp_id !== 'blank') {
+// 		sqlzins = `(b.emp_id LIKE '%${emp_id}%' OR UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%')`;
+// 	} else if (emp_id !== 'blank') {
+// 		sqlzins = `b.emp_id = '${emp_id}'`;
+// 	} else if (ename !== 'blank') {
+// 		sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
+// 	}
 
-	//=========filter type
-	if (filter === 'new') {
-		sqlfilter = ' b.pdf_batch IS NULL' 
-		sqlgroup = ' b.full_name'
+// 	//=========filter type
+// 	if (filter === 'new') {
+// 		sqlfilter = ' b.pdf_batch IS NULL' 
+// 		sqlgroup = ' b.full_name'
 
-	//=======with pdf batch	
-	}else{
-		sqlfilter = ` b.pdf_batch IS NOT NULL OR  b.pdf_batch <> '' `;
-		sqlgroup =	' b.pdf_batch '
-	}
+// 	//=======with pdf batch	
+// 	}else{
+// 		sqlfilter = ` b.pdf_batch IS NOT NULL OR  b.pdf_batch <> '' `;
+// 		sqlgroup =	' b.pdf_batch '
+// 	}
 
-	//console.log( sqlfilter, sqlgroup)
+// 	//console.log( sqlfilter, sqlgroup)
 
-	try {
-		// Build conditional SQL for region and group
-		if (region !== 'ALL') {
-			switch (grpid) {
-				case '6': // head coord
-				sqlins = ` AND a.head_coordinator_email = '${email}' `;
-				break;
-				case '7': // coord
-				sqlins = ` AND a.coordinator_email = '${email}' `;
-				break;
-			}
+// 	try {
+// 		// Build conditional SQL for region and group
+// 		if (region !== 'ALL') {
+// 			switch (grpid) {
+// 				case '6': // head coord
+// 				sqlins = ` AND a.head_coordinator_email = '${email}' `;
+// 				break;
+// 				case '7': // coord
+// 				sqlins = ` AND a.coordinator_email = '${email}' `;
+// 				break;
+// 			}
 
-			var sql = `
-			SELECT 
-					b.id,
-					b.full_name AS rider, 
-					b.emp_id, 
-					b.hubs_location AS hub, 
-					a.region, 
-					count(b.id) as id_count,
-					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-					b.pdf_batch,
-					b.batch_file,
-					b.transaction_year,
-					c.full_name as downloaded_by
-				FROM asn_claims b
-				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-				left join asn_users c on c.id = b.download_empid
-				WHERE ${sqlzins}
-					${sqlins}
-					AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
-					AND b.transaction_year='${currentYear}'
-				GROUP BY b.emp_id,b.full_name,b.pdf_batch  
-				ORDER BY b.batch_file, b.full_name;`;
+// 			var sql = `
+// 			SELECT 
+// 					b.id,
+// 					b.full_name AS rider, 
+// 					b.emp_id, 
+// 					b.hubs_location AS hub, 
+// 					a.region, 
+// 					count(b.id) as id_count,
+// 					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+// 					b.pdf_batch,
+// 					b.batch_file,
+// 					b.transaction_year,
+// 					c.full_name as downloaded_by
+// 				FROM asn_claims b
+// 				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+// 				left join asn_users c on c.id = b.download_empid
+// 				WHERE ${sqlzins}
+// 					${sqlins}
+// 					AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
+// 					AND b.transaction_year='${currentYear}'
+// 				GROUP BY b.emp_id,b.full_name,b.pdf_batch  
+// 				ORDER BY b.batch_file, b.full_name;`;
 
-		} else {
+// 		} else {
 
-			// No region filter, show all SUPER-USERS here 
-			var sql = `
-				SELECT 
-					b.id,
-					b.full_name AS rider, 
-					b.emp_id, 
-					b.hubs_location AS hub, 
-					a.region, 
-					count(b.id) as id_count,
-					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-					b.pdf_batch,
-					b.batch_file,
-					b.transaction_year,
-					b.download_empid,
-					c.full_name as downloaded_by
-				FROM asn_claims b
-				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-				left join asn_users c on c.id = b.download_empid
-				WHERE ${sqlzins}
-					AND ( ${sqlfilter} )
-					AND b.transaction_year='${currentYear}'
-				GROUP BY ${sqlgroup}
-				ORDER BY b.batch_file, b.full_name;`;
-		}
+// 			// No region filter, show all SUPER-USERS here 
+// 			var sql = `
+// 				SELECT 
+// 					b.id,
+// 					b.full_name AS rider, 
+// 					b.emp_id, 
+// 					b.hubs_location AS hub, 
+// 					a.region, 
+// 					count(b.id) as id_count,
+// 					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+// 					b.pdf_batch,
+// 					b.batch_file,
+// 					b.transaction_year,
+// 					b.download_empid,
+// 					c.full_name as downloaded_by
+// 				FROM asn_claims b
+// 				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+// 				left join asn_users c on c.id = b.download_empid
+// 				WHERE ${sqlzins}
+// 					AND ( ${sqlfilter} )
+// 					AND b.transaction_year='${currentYear}'
+// 				GROUP BY ${sqlgroup}
+// 				ORDER BY b.batch_file, b.full_name;`;
+// 		}
 
-		console.log('===get Employee id/name Processing:', sql);
+// 		console.log('===get Employee id/name Processing:', sql);
 
-		// Use your existing db pool
-		const [results] = await db.query(sql);
+// 		// Use your existing db pool
+// 		const [results] = await db.query(sql);
 
-		if (!results || results.length === 0) {
-			res.status(200).json({text:'**No Record Found***', xdata:results});
-		}else{
-			console.log('===get Employee id/name Results:', results.length);
-			let totalAmt = 0;
+// 		if (!results || results.length === 0) {
+// 			res.status(200).json({text:'**No Record Found***', xdata:results});
+// 		}else{
+// 			console.log('===get Employee id/name Results:', results.length);
+// 			let totalAmt = 0;
 			
-			results.forEach(r => {
-				r.total = parseFloat(r.total).toFixed(2);
-				totalAmt += parseFloat(r.total);
-			});
+// 			results.forEach(r => {
+// 				r.total = parseFloat(r.total).toFixed(2);
+// 				totalAmt += parseFloat(r.total);
+// 			});
 
-			/**** take out sorting of totals
-			// Sort by:
-			results.sort((a, b) => {
-			// descending for total
-			if (b.total !== a.total) {
-				return b.total - a.total;
-			}
-			// ascending for emp_id
-			return a.emp_id.localeCompare(b.emp_id);
-			// add more criteria if needed
-			});
-			****/ 
-			const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
-			const curr_date = strdates();
-			let xpdfbatch, xpdfbutton;
+// 			/**** take out sorting of totals
+// 			// Sort by:
+// 			results.sort((a, b) => {
+// 			// descending for total
+// 			if (b.total !== a.total) {
+// 				return b.total - a.total;
+// 			}
+// 			// ascending for emp_id
+// 			return a.emp_id.localeCompare(b.emp_id);
+// 			// add more criteria if needed
+// 			});
+// 			****/ 
+// 			const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
+// 			const curr_date = strdates();
+// 			let xpdfbatch, xpdfbutton;
 			
-			// Build the HTML table for output
-			let xtable = `
-			<h2>(${region.toUpperCase()}) </h2>
+// 			// Build the HTML table for output
+// 			let xtable = `
+// 			<h2>(${region.toUpperCase()}) </h2>
 
-			<table class='blueTable'  >
-				<thead>
-				<tr>
-					<th>Rider</th>
-					<th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
-				</tr>
-				</thead>
-				<tbody>`;
+// 			<table class='blueTable'  >
+// 				<thead>
+// 				<tr>
+// 					<th>Rider</th>
+// 					<th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
+// 				</tr>
+// 				</thead>
+// 				<tbody>`;
 
-			results.forEach(r => {
+// 			results.forEach(r => {
 
-				//==== COPY OF THIS IS IN gridtab2.js===========//
-				if( r.pdf_batch!==null ){
+// 				//==== COPY OF THIS IS IN gridtab2.js===========//
+// 				if( r.pdf_batch!==null ){
 
-					xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
-					Downloaded by: ${(r.downloaded_by==null?'NO ID':r.downloaded_by)}`
-					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-primary btn-sm'>RE-PRINT ${r.pdf_batch}</a>
-					<a href='javascript:void(0)' onclick="asn.resetPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-danger btn-sm'>RESET ${r.pdf_batch}</a>
-					`
+// 					xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
+// 					Downloaded by: ${(r.downloaded_by==null?'NO ID':r.downloaded_by)}`
+// 					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-primary btn-sm'>RE-PRINT ${r.pdf_batch}</a>
+// 					<a href='javascript:void(0)' onclick="asn.resetPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-danger btn-sm'>RESET ${r.pdf_batch}</a>
+// 					`
 					
-				}else{
-					xpdfbatch = "ATD PDF NOT YET PROCESSED"	
-					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-danger btn-sm'>Remove</a>`
-				}//eif
+// 				}else{
+// 					xpdfbatch = "ATD PDF NOT YET PROCESSED"	
+// 					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-danger btn-sm'>Remove</a>`
+// 				}//eif
 
-				xtable += `<tr>
-					<td>
-					Rec# ${r.id}<br>
-					Rec Count: ${r.id_count}<br>
-					<b>${r.rider.toUpperCase()}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
-					${r.emp_id}<br>
-					(${r.region || 'NO REGION'}, ${r.hub})<br>
-					${r.batch_file}<br>
-					${r.transaction_year}<br>
-					<span style='color:red'>${xpdfbatch}</span><br>
-					${xpdfbutton}&nbsp;
+// 				xtable += `<tr>
+// 					<td>
+// 					Rec# ${r.id}<br>
+// 					Rec Count: ${r.id_count}<br>
+// 					<b>${r.rider.toUpperCase()}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
+// 					${r.emp_id}<br>
+// 					(${r.region || 'NO REGION'}, ${r.hub})<br>
+// 					${r.batch_file}<br>
+// 					${r.transaction_year}<br>
+// 					<span style='color:red'>${xpdfbatch}</span><br>
+// 					${xpdfbutton}&nbsp;
 					
-					</td>
-					<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
-				</tr>`;
-			});// ===end results.forEach
+// 					</td>
+// 					<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
+// 				</tr>`;
+// 			});// ===end results.forEach
 
 
 
-			xtable += `
-				<tr>
-					<td align='right'><b>TOTAL :</b></td>
-					<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
-				</tr>
-				<tr>
-					<td colspan='2'>
-					<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
-					<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD PDF</button>
-						<!-- Continuation from previous code snippet -->
-					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
-					</td>
-				</tr>
-				</tbody>
-				</table>
-				`;
+// 			xtable += `
+// 				<tr>
+// 					<td align='right'><b>TOTAL :</b></td>
+// 					<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
+// 				</tr>
+// 				<tr>
+// 					<td colspan='2'>
+// 					<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
+// 					<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD PDF</button>
+// 						<!-- Continuation from previous code snippet -->
+// 					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
+// 					</td>
+// 				</tr>
+// 				</tbody>
+// 				</table>
+// 				`;
 
-			let xbtn = `
-				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
-				<!-- Continuation from previous code snippet -->
-			`
-				// Send the constructed HTML as response
-				res.status(200).json({text:xtable, xdata:results, btn: xbtn});
+// 			let xbtn = `
+// 				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
+// 				<!-- Continuation from previous code snippet -->
+// 			`
+// 				// Send the constructed HTML as response
+// 				res.status(200).json({text:xtable, xdata:results, btn: xbtn});
 
-		}//*****************endif */
+// 		}//*****************endif */
 
 		
-	} catch (err) {
-		console.error('Error processing request:', err);
-		res.status(500).json({ error: 'Error' });
-	}
-});
+// 	} catch (err) {
+// 		console.error('Error processing request:', err);
+// 		res.status(500).json({ error: 'Error' });
+// 	}
+// });
 //=================END GET RECORD BY ID OR NAME =============//
 
+//============ search by id or name ============//
+// Route parameters now perfectly match your client JS URL build order
+router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async (req, res) => {
+    // Destructure using your client naming conventions: enum -> emp_id, ename -> ename, hub -> hub
+    const { enum: emp_id, ename, hub, region, grpid, email, filter } = req.params;
+
+    let sqlConditions = [];
+    let queryParams = [];
+
+    // 1. Build search condition (sqlzins) securely using parameters
+    if (ename !== 'blank' && emp_id !== 'blank') {
+        sqlConditions.push(`(b.emp_id LIKE ? OR UPPER(b.full_name) LIKE ?)`);
+        queryParams.push(`%${emp_id}%`, `%${ename.toUpperCase()}%`);
+    } else if (emp_id !== 'blank') {
+        sqlConditions.push(`b.emp_id = ?`);
+        queryParams.push(emp_id);
+    } else if (ename !== 'blank') {
+        sqlConditions.push(`UPPER(b.full_name) LIKE ?`);
+        queryParams.push(`%${ename.toUpperCase()}%`);
+    }
+
+ // 2. Add hub filtering using LIKE '%value%' comparison
+    if (hub !== 'blank') {
+        sqlConditions.push(`b.hubs_location LIKE ?`);
+        queryParams.push(`%${hub}%`); // Safely injects the wildcards into the parameterized query
+    }
+
+    // 3. Add Fixed transaction year constraint
+    sqlConditions.push(`b.transaction_year = ?`);
+    queryParams.push(currentYear); // Assumes currentYear is defined globally in your script
+
+    let sqlGroup = 'b.pdf_batch';
+
+    // 4. Conditional adjustments based on region parameter
+    if (region !== 'ALL') {
+        if (grpid === '6') {
+            sqlConditions.push(`a.head_coordinator_email = ?`);
+            queryParams.push(email);
+        } else if (grpid === '7') {
+            sqlConditions.push(`a.coordinator_email = ?`);
+            queryParams.push(email);
+        }
+        sqlConditions.push(`(b.pdf_batch IS NULL OR b.pdf_batch <> '')`);
+        sqlGroup = 'b.emp_id, b.full_name, b.pdf_batch';
+    } else {
+        // Handle filter criteria for SUPER-USERS
+        if (filter === 'new') {
+            sqlConditions.push(`b.pdf_batch IS NULL`);
+            sqlGroup = 'b.full_name';
+        } else {
+            sqlConditions.push(`(b.pdf_batch IS NOT NULL AND b.pdf_batch <> '')`);
+            sqlGroup = 'b.pdf_batch';
+        }
+    }
+
+    // Combine conditions seamlessly into final WHERE clause
+    const whereClause = sqlConditions.join(' AND ');
+
+    const sql = `
+        SELECT 
+            b.id,
+            b.full_name AS rider, 
+            b.emp_id, 
+            b.hubs_location AS hub, 
+            a.region, 
+            COUNT(b.id) AS id_count,
+            COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+            b.pdf_batch,
+            b.batch_file,
+            b.transaction_year,
+            b.download_empid,
+            c.full_name AS downloaded_by
+        FROM asn_claims b
+        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+        LEFT JOIN asn_users c ON c.id = b.download_empid
+        WHERE ${whereClause}
+        GROUP BY ${sqlGroup}
+        ORDER BY b.batch_file, b.full_name;
+    `;
+
+	console.log('===get Employee id/name Processing Query ===', sql, queryParams);
+
+    try {
+        console.log('=== get Employee id/name Processing Query ===');
+        const [results] = await db.query(sql, queryParams);
+
+        if (!results || results.length === 0) {
+            return res.status(200).json({ text: '***No Record Found***', xdata: results });
+        }
+
+        console.log('=== get Employee id/name Results Count:', results.length);
+        
+        let totalAmt = 0;
+        let tableRowsHtml = '';
+
+        results.forEach(r => {
+            r.total = parseFloat(r.total).toFixed(2);
+            totalAmt += parseFloat(r.total);
+
+            let xpdfbatch = "ATD PDF NOT YET PROCESSED";
+            let xpdfbutton = `<a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-danger btn-sm'>Remove</a>`;
+
+            if (r.pdf_batch !== null) {
+                const downloader = r.downloaded_by ?? 'NO ID';
+                xpdfbatch = `ATD # ${r.pdf_batch}<br>Downloaded by: ${downloader}`;
+                xpdfbutton = `
+                    <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-primary btn-sm'>RE-PRINT ${r.pdf_batch}</a>
+                    <a href='javascript:void(0)' onclick="asn.resetPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-danger btn-sm'>RESET ${r.pdf_batch}</a>
+                `.trim();
+            }
+
+            tableRowsHtml += `
+                <tr>
+                    <td>
+                        Rec# ${r.id}<br>
+                        Rec Count: ${r.id_count}<br>
+                        <b>${r.rider.toUpperCase()}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
+                        ${r.emp_id}<br>
+                        (${r.region ?? 'NO REGION'}, ${r.hub})<br>
+                        ${r.batch_file}<br>
+                        ${r.transaction_year}<br>
+                        <span style='color:red'>${xpdfbatch}</span><br>
+                        ${xpdfbutton}&nbsp;
+                    </td>
+                    <td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
+                </tr>
+            `;
+        });
+
+        const overallTotalFormatted = addCommas(totalAmt.toFixed(2));
+
+        const xtable = `
+            <h2>(${region.toUpperCase()}) </h2>
+            <table class='blueTable'>
+                <thead>
+                    <tr>
+                        <th>Rider</th>
+                        <th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                    <tr>
+                        <td align='right'><b>TOTAL :</b></td>
+                        <td align='right'><b>${overallTotalFormatted}&nbsp;&nbsp;&nbsp;</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan='2'>
+                            <button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
+                            <button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD PDF</button>
+                            <button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        `.trim();
+
+        const xbtn = `<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>`;
+
+        res.status(200).json({ text: xtable, xdata: results, btn: xbtn });
+
+    } catch (err) {
+        console.error('Error processing request:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 router.get('/getchart', async (req, res) => {
 	console.log('===FIRING getchart() ====')
