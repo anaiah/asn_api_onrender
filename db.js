@@ -5,7 +5,7 @@ const {Client} = require('pg');
 let client
 
 const pool = mysql.createPool({
-   host: 'srv1759.hstgr.io',
+   host: '153.92.15.50',
     user: 'u899193124_asianow',
     password: 'g12@c3M312c4',
     database: 'u899193124_asianow',

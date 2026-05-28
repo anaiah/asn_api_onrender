@@ -68,7 +68,7 @@ const { v4: uuid } = require('uuid'); // for generating unique IDs//
 const mysqls = require('mysql2/promise')
 
 const dbconfig  ={
-	host: 'srv1759.hstgr.io',
+	host: '153.92.15.50',
 	user: 'u899193124_asianow',
 	password: 'g12@c3M312c4',
 	database: 'u899193124_asianow'
