@@ -1296,37 +1296,68 @@ router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async 
     // Combine conditions seamlessly into final WHERE clause
     const whereClause = sqlConditions.join(' AND ');
 
-    const sql = `
-        SELECT 
-            b.id,
-            b.full_name AS rider, 
-            b.emp_id, 
-            b.hubs_location AS hub, 
-            a.region, 
-            COUNT(b.id) AS id_count,
-            COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-            b.pdf_batch,
-            b.batch_file,
-            b.transaction_year,
-            b.download_empid,
-            c.full_name AS downloaded_by
-        FROM asn_claims b
-        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-        LEFT JOIN asn_users c ON c.id = b.download_empid
-        WHERE ${whereClause}
-        GROUP BY ${sqlGroup}
-        ORDER BY b.batch_file, b.full_name;
-    `;
+    // const sql = `
+    //     SELECT 
+    //         b.id,
+    //         b.full_name AS rider, 
+    //         b.emp_id, 
+    //         b.hubs_location AS hub, 
+    //         a.region, 
+    //         COUNT(b.id) AS id_count,
+    //         COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+    //         b.pdf_batch,
+    //         b.batch_file,
+    //         b.transaction_year,
+    //         b.download_empid,
+    //         c.full_name AS downloaded_by
+    //     FROM asn_claims b
+    //     LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+    //     LEFT JOIN asn_users c ON c.id = b.download_empid
+    //     WHERE ${whereClause}
+    //     GROUP BY ${sqlGroup}
+    //     ORDER BY b.batch_file, b.full_name;
+    // `;
+
+	const sql = `SELECT
+		b.id,
+		b.full_name AS rider,
+		b.emp_id,
+		b.hubs_location AS hub,
+		a.region,
+		COUNT(b.id) AS id_count,
+		COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+		b.pdf_batch,
+		b.batch_file,
+		b.transaction_year,
+		b.download_empid,
+		c.full_name AS downloaded_by
+	FROM asn_claims b
+	-- This subquery selects distinct hub-to-region mappings to eliminate duplicates
+	LEFT JOIN (
+		SELECT DISTINCT hub, region 
+		FROM asn_spx_hubs
+	) a ON a.hub = b.hubs_location
+	LEFT JOIN asn_users c ON c.id = b.download_empid
+	WHERE UPPER(b.full_name) LIKE ? 
+	AND b.transaction_year = ? 
+	AND (b.pdf_batch IS NOT NULL AND b.pdf_batch <> '')
+	GROUP BY b.pdf_batch
+	ORDER BY b.batch_file, b.full_name;`;
 
 	console.log('===get Employee id/name Processing Query ===', sql, queryParams);
 
+	
     try {
         console.log('=== get Employee id/name Processing Query ===');
         const [results] = await db.query(sql, queryParams);
 
         if (!results || results.length === 0) {
             return res.status(200).json({ text: '***No Record Found***', xdata: results });
-        }
+        }else{
+			return res.status(200).json({ text: 'Processing Query...', xdata: results }); // Immediate response to client
+
+
+		}
 
         console.log('=== get Employee id/name Results Count:', results.length);
         
