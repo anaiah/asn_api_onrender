@@ -947,7 +947,7 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
 //================= TOP 5 RIDER
 // Your db is already imported
 // const db = require('../db'); 
-
+//new jun 3 2026
 router.get('/getrider/:region/:grpid/:email', async (req, res) => {
   const { region, grpid, email } = req.params;
 
@@ -960,43 +960,49 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
       const regionsArray = region.split(',');
       const sanitizedRegions = regionsArray.map(region => region.trim());
 
-      //Parameterized query approach
+      // Dynamically map array elements into safe, explicit sequence placeholders (?, ?)
+      const placeholders = sanitizedRegions.map(() => '?').join(',');
+
+      // REFACTORED SQL: Employs DISTINCT subquery join and standardizes columns for safe grouping
       sql = `
         SELECT b.full_name AS rider, 
           b.emp_id, 
-          b.hubs_location AS hub, 
-          a.region, 
+          MAX(b.hubs_location) AS hub, 
+          MAX(a.region) AS region, 
           COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-          b.pdf_batch, 
-          b.batch_file,
-		  b.transaction_year
+          MAX(b.transaction_year) AS transaction_year
         FROM asn_claims b 
-        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
+        LEFT JOIN (
+          SELECT DISTINCT hub, region 
+          FROM asn_spx_hubs
+        ) a ON a.hub = b.hubs_location 
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-        AND a.region IN (?)
-		AND b.transaction_year='${currentYear}'
-        GROUP BY b.full_name,b.emp_id
+        AND a.region IN (${placeholders})
+        AND b.transaction_year='${currentYear}'
+        GROUP BY b.full_name, b.emp_id
         ORDER BY total DESC LIMIT 5;
       `;
     
-      params = [sanitizedRegions];  // Pass the array of regions as a parameter
+      params = sanitizedRegions;  // Pass the flattened array of parameters
 
       console.log(sql, sanitizedRegions); // Log the SQL and parameter
     } else {
+      // Scenario 2: All regions
       sql = `
         SELECT b.full_name AS rider, 
           b.emp_id, 
-          b.hubs_location AS hub, 
-          a.region, 
+          MAX(b.hubs_location) AS hub, 
+          MAX(a.region) AS region, 
           COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-          b.pdf_batch, 
-          b.batch_file,
-		  b.transaction_year
+          MAX(b.transaction_year) AS transaction_year
         FROM asn_claims b
-        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+        LEFT JOIN (
+          SELECT DISTINCT hub, region 
+          FROM asn_spx_hubs
+        ) a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-		AND b.transaction_year='${currentYear}'
-        GROUP by b.full_name, b.emp_id 		
+        AND b.transaction_year='${currentYear}'
+        GROUP BY b.full_name, b.emp_id 		
         ORDER BY total DESC LIMIT 5;
       `;
       console.log(sql);
@@ -1026,8 +1032,8 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
         <td>
           <b>${row.rider}</b><br>
           ${row.emp_id}<br>
-          (${row.region}, ${row.hub})<br>
-		  ${row.transaction_year}
+          (${row.region ?? 'NO REGION'}, ${row.hub})<br>
+          ${row.transaction_year}
         </td>
         <td align='right' valign='bottom'><b>${addCommas(parseFloat(row.total).toFixed(2))}</b>&nbsp;&nbsp;&nbsp;&nbsp;</td>
       </tr>`;
@@ -1040,6 +1046,100 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
     res.status(500).json({ error: 'Error' });
   }
 });
+
+//old
+// router.get('/getrider/:region/:grpid/:email', async (req, res) => {
+//   const { region, grpid, email } = req.params;
+
+//   try {
+//     let sql;
+//     let params = [];
+
+//     if (region !== 'ALL') {
+//        // Scenario 1: Specific region(s)
+//       const regionsArray = region.split(',');
+//       const sanitizedRegions = regionsArray.map(region => region.trim());
+
+//       //Parameterized query approach
+//       sql = `
+//         SELECT b.full_name AS rider, 
+//           b.emp_id, 
+//           b.hubs_location AS hub, 
+//           a.region, 
+//           COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+//           b.pdf_batch, 
+//           b.batch_file,
+// 		  b.transaction_year
+//         FROM asn_claims b 
+//         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
+//         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+//         AND a.region IN (?)
+// 		AND b.transaction_year='${currentYear}'
+//         GROUP BY b.full_name,b.emp_id
+//         ORDER BY total DESC LIMIT 5;
+//       `;
+    
+//       params = [sanitizedRegions];  // Pass the array of regions as a parameter
+
+//       console.log(sql, sanitizedRegions); // Log the SQL and parameter
+//     } else {
+//       sql = `
+//         SELECT b.full_name AS rider, 
+//           b.emp_id, 
+//           b.hubs_location AS hub, 
+//           a.region, 
+//           COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
+//           b.pdf_batch, 
+//           b.batch_file,
+// 		  b.transaction_year
+//         FROM asn_claims b
+//         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+//         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+// 		AND b.transaction_year='${currentYear}'
+//         GROUP by b.full_name, b.emp_id 		
+//         ORDER BY total DESC LIMIT 5;
+//       `;
+//       console.log(sql);
+//     }
+
+//     const [results] = await db.query(sql, params);
+
+//     console.log('=======Top 5 Rider processing v.2 ...' );
+
+//     if (!results || results.length === 0) {
+//       return res.status(200).send('** No Record Yet! ***');
+//     }
+
+//     let xtable = `<div class="col-lg-8">
+//       <h2>(${region.toUpperCase()})</h2>
+//       <table class="blueTable">
+//         <thead>
+//           <tr>
+//             <th>Rider</th>
+//             <th>Amount</th>
+//           </tr>
+//         </thead>
+//         <tbody>`;
+      
+//     results.forEach(row => {
+//       xtable += `<tr>
+//         <td>
+//           <b>${row.rider}</b><br>
+//           ${row.emp_id}<br>
+//           (${row.region}, ${row.hub})<br>
+// 		  ${row.transaction_year}
+//         </td>
+//         <td align='right' valign='bottom'><b>${addCommas(parseFloat(row.total).toFixed(2))}</b>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+//       </tr>`;
+//     });
+//     xtable += `</tbody></table></div>`;
+
+//     res.status(200).send(xtable);
+//   } catch (err) {
+//     console.error('Error in getrider:', err);
+//     res.status(500).json({ error: 'Error' });
+//   }
+// });
 
 //======= end top 10
 
