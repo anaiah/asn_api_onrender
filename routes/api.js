@@ -1562,6 +1562,8 @@ router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async 
     }
 });
 
+
+//old
 // router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async (req, res) => {
 //     // Destructure using your client naming conventions: enum -> emp_id, ename -> ename, hub -> hub
 //     const { enum: emp_id, ename, hub, region, grpid, email, filter } = req.params;
@@ -1758,37 +1760,74 @@ router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async 
 //     }
 // });
 
+//old
+// router.get('/getchart', async (req, res) => {
+// 	console.log('===FIRING getchart() ====')
+// 	try {
 
+// 		const sql = `SELECT 
+// 			(CASE WHEN b.region IS NOT NULL THEN b.region ELSE 'NO REGION' END) AS region, 
+			
+// 			-- Sum where pdf_batch is not empty (Returns 0 instead of NULL)
+// 			ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch <> '' OR c.pdf_batch IS NOT NULL) THEN c.amount END), 0), 0) AS with_atd, 
+			
+// 			-- Sum where pdf_batch is empty (Returns 0 instead of NULL)
+// 			ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch = '' OR c.pdf_batch IS NULL) THEN c.amount END), 0), 0) AS no_atd, 
+			
+// 			ROUND(SUM(CASE WHEN signed = 1 THEN c.amount ELSE 0 END), 0) AS xsigned 
+// 		FROM asn_claims c 
+// 		LEFT JOIN asn_spx_hubs b ON c.hubs_location = b.hub 
+// 		WHERE c.transaction_year = '${currentYear}' 
+// 		GROUP BY b.region;
+// `
+
+// 		const [chartrow] = await db.query(sql);
+
+// 		// Your chart generation logic here
+// 		res.status(200).send(chartrow);
+
+// 	} catch (err) {
+// 		console.error('Error processing request:', err);
+// 		res.status(500).json({ error: 'Error' });
+// 	}
+// });
+//============get chart data new jun 3 2026 ============//
 router.get('/getchart', async (req, res) => {
-	console.log('===FIRING getchart() ====')
+	console.log('===FIRING getchart() ====');
 	try {
-
-		const sql = `SELECT 
-			(CASE WHEN b.region IS NOT NULL THEN b.region ELSE 'NO REGION' END) AS region, 
-			
-			-- Sum where pdf_batch is not empty (Returns 0 instead of NULL)
-			ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch <> '' OR c.pdf_batch IS NOT NULL) THEN c.amount END), 0), 0) AS with_atd, 
-			
-			-- Sum where pdf_batch is empty (Returns 0 instead of NULL)
-			ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch = '' OR c.pdf_batch IS NULL) THEN c.amount END), 0), 0) AS no_atd, 
-			
-			ROUND(SUM(CASE WHEN signed = 1 THEN c.amount ELSE 0 END), 0) AS xsigned 
-		FROM asn_claims c 
-		LEFT JOIN asn_spx_hubs b ON c.hubs_location = b.hub 
-		WHERE c.transaction_year = '${currentYear}' 
-		GROUP BY b.region;
-`
+		// REFACTORED SQL: Employs DISTINCT subquery join and corrects logic flags
+		const sql = `
+			SELECT 
+				COALESCE(b.region, 'NO REGION') AS region, 
+				
+				-- Sum where pdf_batch has real text content (not null and not empty)
+				ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch IS NOT NULL AND c.pdf_batch <> '') THEN c.amount END), 0), 0) AS with_atd, 
+				
+				-- Sum where pdf_batch is either null or an empty string
+				ROUND(COALESCE(SUM(CASE WHEN (c.pdf_batch IS NULL OR c.pdf_batch = '') THEN c.amount END), 0), 0) AS no_atd, 
+				
+				ROUND(SUM(CASE WHEN c.signed = 1 THEN c.amount ELSE 0 END), 0) AS xsigned 
+			FROM asn_claims c 
+			LEFT JOIN (
+				SELECT DISTINCT hub, region 
+				FROM asn_spx_hubs
+			) b ON c.hubs_location = b.hub 
+			WHERE c.transaction_year = '${currentYear}' 
+			GROUP BY b.region;
+		`;
 
 		const [chartrow] = await db.query(sql);
 
-		// Your chart generation logic here
-		res.status(200).send(chartrow);
+		// FIXED: Explicitly use .json() to output structured data to charting engines
+		return res.status(200).json(chartrow);
 
 	} catch (err) {
 		console.error('Error processing request:', err);
-		res.status(500).json({ error: 'Error' });
+		return res.status(500).json({ error: 'Error' });
 	}
 });
+
+
 
 //================ RESET PDF=================//
 router.get('/resetpdf/:batch',async(req,res)=>{
