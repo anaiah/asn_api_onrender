@@ -1144,75 +1144,163 @@ router.get('/getrider/:region/:grpid/:email', async (req, res) => {
 //======= end top 10
 
 
-router.get('/getfinance/:region/:email', async( req, res) =>{
-	
-	sql = `SELECT distinct(a.hubs_location) as hub, 
-			sum( a.amount ) as total ,
-			b.region as region,
-			b.email
-			from asn_claims a
-			join asn_spx_hubs b
-			on a.hubs_location = b.hub
-			group by a.hubs_location,b.region
-			having b.region = '${req.params.region}'
-			`
+//new jun 3 2026
+router.get('/getfinance/:region/:email', async (req, res) => {
+	const { region, email } = req.params;
+	console.log('LIST OF ATDS FOR CROSSCHEK...', region);
 
-	console.log(sql)
-	console.log('LIST OF ATDS FOR CROSSCHEK...')
-	connectDb()
-	.then((xdb)=>{
-		xdb.query(`${sql}`,(error,results) => {	
+	// 1. Optimize performance by filtering in the WHERE clause, not HAVING
+	// 2. Prevent amount inflation using a DISTINCT hub subquery mapping
+	const sql = `
+		SELECT 
+			a.hubs_location AS hub, 
+			COALESCE(ROUND(SUM(a.amount), 2), 0) AS total,
+			b.region AS region,
+			MAX(b.email) AS email
+		FROM asn_claims a
+		INNER JOIN (
+			SELECT DISTINCT hub, region, email 
+			FROM asn_spx_hubs
+		) b ON a.hubs_location = b.hub
+		WHERE b.region = ?
+		GROUP BY a.hubs_location, b.region
+		ORDER BY hub ASC;
+	`;
+
+	console.log('Executing Query Structure Safely with Placeholders...');
+
+	let xdb;
+	try {
+		xdb = await connectDb();
 		
-			if ( results.length == 0) {   //data = array 
-				console.log('no rec')
-				closeDb(xdb);//CLOSE connection
-		
-				res.status(500).send('** No Record Yet! ***')
-		
-			}else{ 
-			
-				let xtable = 
-				
-				`
-				<h2>(${req.params.region.toUpperCase()})</h2>
+		// Execute query safely passing variables inside the parameterized array array
+		xdb.query(sql, [region], (error, results) => {
+			// Ensure connection is ALWAYS closed when query lifecycle finishes
+			if (xdb) closeDb(xdb);
+
+			if (error) {
+				console.error('Query execution failure:', error);
+				return res.status(500).json({ error: 'Database Error' });
+			}
+
+			if (!results || results.length === 0) {
+				console.log('no rec');
+				return res.status(200).send('** No Record Yet! ***'); // Using 200 avoids client console errors for empty sets
+			}
+
+			let xtable = `
+				<h2>(${region.toUpperCase()})</h2>
 				<div class="col-lg-8">
-						<table class="table"> 
-					<thead>
-						<tr>
-						<th>Region</th>
-						<th>Hub Location</th>
-						<th>Amount</th>
-						</tr>
-					</thead>
-					<tbody>`
+					<table class="table"> 
+						<thead>
+							<tr>
+								<th>Region</th>
+								<th>Hub Location</th>
+								<th>Amount</th>
+							</tr>
+						</thead>
+						<tbody>
+			`;
 
-					//iterate top 10
-					for(let zkey in results){
-						xtable+= `<tr>
-						<td>${results[zkey].region}</td>
-						<td >${results[zkey].hub}</td>
-						<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
-						<tr>`
+			// Iterate safely using standard, readable array tracking mechanics
+			results.forEach(row => {
+				xtable += `
+					<tr>
+						<td>${row.region}</td>
+						<td>${row.hub}</td>
+						<td align='right'><b>${addCommas(parseFloat(row.total).toFixed(2))}</b></td>
+					</tr>
+				`; // Fixed the broken <tr> syntax mismatch to </tr> here
+			});
 
-					}//endfor
-
-					xtable+=	
-					`</tbody>
+			xtable += `
+						</tbody>
 					</table>
-					</div>`
+				</div>
+			`.trim();
 
-					closeDb(xdb);//CLOSE connection
+			res.status(200).send(xtable);
+		});
+
+	} catch (error) {
+		// Clean up pool assets if connection fails mid-operation
+		if (xdb) closeDb(xdb);
+		console.error('Connection pool exception:', error);
+		res.status(500).json({ error: 'Internal Server Connection Error' });
+	}
+});
+
+
+//old
+// router.get('/getfinance/:region/:email', async( req, res) =>{
+	
+// 	sql = `SELECT distinct(a.hubs_location) as hub, 
+// 			sum( a.amount ) as total ,
+// 			b.region as region,
+// 			b.email
+// 			from asn_claims a
+// 			join asn_spx_hubs b
+// 			on a.hubs_location = b.hub
+// 			group by a.hubs_location,b.region
+// 			having b.region = '${req.params.region}'
+// 			`
+
+// 	console.log(sql)
+// 	console.log('LIST OF ATDS FOR CROSSCHEK...')
+// 	connectDb()
+// 	.then((xdb)=>{
+// 		xdb.query(`${sql}`,(error,results) => {	
 		
-					res.status(200).send(xtable)				
+// 			if ( results.length == 0) {   //data = array 
+// 				console.log('no rec')
+// 				closeDb(xdb);//CLOSE connection
+		
+// 				res.status(500).send('** No Record Yet! ***')
+		
+// 			}else{ 
+			
+// 				let xtable = 
 				
-			}//eif
-		
-		})
+// 				`
+// 				<h2>(${req.params.region.toUpperCase()})</h2>
+// 				<div class="col-lg-8">
+// 						<table class="table"> 
+// 					<thead>
+// 						<tr>
+// 						<th>Region</th>
+// 						<th>Hub Location</th>
+// 						<th>Amount</th>
+// 						</tr>
+// 					</thead>
+// 					<tbody>`
 
-	}).catch((error)=>{
-		res.status(500).json({error:'Error'})
-	}) 
-})
+// 					//iterate top 10
+// 					for(let zkey in results){
+// 						xtable+= `<tr>
+// 						<td>${results[zkey].region}</td>
+// 						<td >${results[zkey].hub}</td>
+// 						<td align='right'><b>${addCommas(parseFloat(results[zkey].total).toFixed(2))}</b></td>
+// 						<tr>`
+
+// 					}//endfor
+
+// 					xtable+=	
+// 					`</tbody>
+// 					</table>
+// 					</div>`
+
+// 					closeDb(xdb);//CLOSE connection
+		
+// 					res.status(200).send(xtable)				
+				
+// 			}//eif
+		
+// 		})
+
+// 	}).catch((error)=>{
+// 		res.status(500).json({error:'Error'})
+// 	}) 
+// })
 
 const os = require('os')
 
@@ -1231,210 +1319,6 @@ const getServerIp = () =>{
 	return addresses
 }
 
-
-//============search by id or name
-// router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async (req, res) => {
-// 	const { enum: emp_id, ename, hub, region, grpid, email, filter} = req.params;
-
-// 	let sqlins = '', sqlzins = '',sqlfilter='', sqlgroup = ''
-
-// 	// Build search condition
-// 	if (ename !== 'blank' && emp_id !== 'blank') {
-// 		sqlzins = `(b.emp_id LIKE '%${emp_id}%' OR UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%')`;
-// 	} else if (emp_id !== 'blank') {
-// 		sqlzins = `b.emp_id = '${emp_id}'`;
-// 	} else if (ename !== 'blank') {
-// 		sqlzins = `UPPER(b.full_name) LIKE '%${ename.toUpperCase()}%'`;
-// 	}
-
-// 	//=========filter type
-// 	if (filter === 'new') {
-// 		sqlfilter = ' b.pdf_batch IS NULL' 
-// 		sqlgroup = ' b.full_name'
-
-// 	//=======with pdf batch	
-// 	}else{
-// 		sqlfilter = ` b.pdf_batch IS NOT NULL OR  b.pdf_batch <> '' `;
-// 		sqlgroup =	' b.pdf_batch '
-// 	}
-
-// 	//console.log( sqlfilter, sqlgroup)
-
-// 	try {
-// 		// Build conditional SQL for region and group
-// 		if (region !== 'ALL') {
-// 			switch (grpid) {
-// 				case '6': // head coord
-// 				sqlins = ` AND a.head_coordinator_email = '${email}' `;
-// 				break;
-// 				case '7': // coord
-// 				sqlins = ` AND a.coordinator_email = '${email}' `;
-// 				break;
-// 			}
-
-// 			var sql = `
-// 			SELECT 
-// 					b.id,
-// 					b.full_name AS rider, 
-// 					b.emp_id, 
-// 					b.hubs_location AS hub, 
-// 					a.region, 
-// 					count(b.id) as id_count,
-// 					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-// 					b.pdf_batch,
-// 					b.batch_file,
-// 					b.transaction_year,
-// 					c.full_name as downloaded_by
-// 				FROM asn_claims b
-// 				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-// 				left join asn_users c on c.id = b.download_empid
-// 				WHERE ${sqlzins}
-// 					${sqlins}
-// 					AND (b.pdf_batch IS NULL OR b.pdf_batch <> '')
-// 					AND b.transaction_year='${currentYear}'
-// 				GROUP BY b.emp_id,b.full_name,b.pdf_batch  
-// 				ORDER BY b.batch_file, b.full_name;`;
-
-// 		} else {
-
-// 			// No region filter, show all SUPER-USERS here 
-// 			var sql = `
-// 				SELECT 
-// 					b.id,
-// 					b.full_name AS rider, 
-// 					b.emp_id, 
-// 					b.hubs_location AS hub, 
-// 					a.region, 
-// 					count(b.id) as id_count,
-// 					COALESCE(ROUND(SUM(b.amount), 2), 0) AS total,
-// 					b.pdf_batch,
-// 					b.batch_file,
-// 					b.transaction_year,
-// 					b.download_empid,
-// 					c.full_name as downloaded_by
-// 				FROM asn_claims b
-// 				LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
-// 				left join asn_users c on c.id = b.download_empid
-// 				WHERE ${sqlzins}
-// 					AND ( ${sqlfilter} )
-// 					AND b.transaction_year='${currentYear}'
-// 				GROUP BY ${sqlgroup}
-// 				ORDER BY b.batch_file, b.full_name;`;
-// 		}
-
-// 		console.log('===get Employee id/name Processing:', sql);
-
-// 		// Use your existing db pool
-// 		const [results] = await db.query(sql);
-
-// 		if (!results || results.length === 0) {
-// 			res.status(200).json({text:'**No Record Found***', xdata:results});
-// 		}else{
-// 			console.log('===get Employee id/name Results:', results.length);
-// 			let totalAmt = 0;
-			
-// 			results.forEach(r => {
-// 				r.total = parseFloat(r.total).toFixed(2);
-// 				totalAmt += parseFloat(r.total);
-// 			});
-
-// 			/**** take out sorting of totals
-// 			// Sort by:
-// 			results.sort((a, b) => {
-// 			// descending for total
-// 			if (b.total !== a.total) {
-// 				return b.total - a.total;
-// 			}
-// 			// ascending for emp_id
-// 			return a.emp_id.localeCompare(b.emp_id);
-// 			// add more criteria if needed
-// 			});
-// 			****/ 
-// 			const totalFormatted = addCommas(parseFloat(totalAmt).toFixed(2));
-// 			const curr_date = strdates();
-// 			let xpdfbatch, xpdfbutton;
-			
-// 			// Build the HTML table for output
-// 			let xtable = `
-// 			<h2>(${region.toUpperCase()}) </h2>
-
-// 			<table class='blueTable'  >
-// 				<thead>
-// 				<tr>
-// 					<th>Rider</th>
-// 					<th align="right">Amount&nbsp;&nbsp;&nbsp;</th>
-// 				</tr>
-// 				</thead>
-// 				<tbody>`;
-
-// 			results.forEach(r => {
-
-// 				//==== COPY OF THIS IS IN gridtab2.js===========//
-// 				if( r.pdf_batch!==null ){
-
-// 					xpdfbatch = 	`ATD # ${r.pdf_batch}<br>
-// 					Downloaded by: ${(r.downloaded_by==null?'NO ID':r.downloaded_by)}`
-// 					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.printPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-primary btn-sm'>RE-PRINT ${r.pdf_batch}</a>
-// 					<a href='javascript:void(0)' onclick="asn.resetPdf('${r.pdf_batch}','${r.download_empid}')" class='btn btn-danger btn-sm'>RESET ${r.pdf_batch}</a>
-// 					`
-					
-// 				}else{
-// 					xpdfbatch = "ATD PDF NOT YET PROCESSED"	
-// 					xpdfbutton =` <a href='javascript:void(0)' onclick="asn.addtoprint('${r.id}','${r.rider}','${r.emp_id}')" class='btn btn-danger btn-sm'>Remove</a>`
-// 				}//eif
-
-// 				xtable += `<tr>
-// 					<td>
-// 					Rec# ${r.id}<br>
-// 					Rec Count: ${r.id_count}<br>
-// 					<b>${r.rider.toUpperCase()}</b>&nbsp;<i style='color:green;font-size:2em;' class='ti ti-circle-check lets-hide' id='${r.id}'></i><br>
-// 					${r.emp_id}<br>
-// 					(${r.region || 'NO REGION'}, ${r.hub})<br>
-// 					${r.batch_file}<br>
-// 					${r.transaction_year}<br>
-// 					<span style='color:red'>${xpdfbatch}</span><br>
-// 					${xpdfbutton}&nbsp;
-					
-// 					</td>
-// 					<td align='right'><b>${addCommas(parseFloat(r.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
-// 				</tr>`;
-// 			});// ===end results.forEach
-
-
-
-// 			xtable += `
-// 				<tr>
-// 					<td align='right'><b>TOTAL :</b></td>
-// 					<td align='right'><b>${addCommas(parseFloat(totalAmt).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
-// 				</tr>
-// 				<tr>
-// 					<td colspan='2'>
-// 					<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
-// 					<button id='download-btn' type='button' class='btn btn-primary' disabled onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD PDF</button>
-// 						<!-- Continuation from previous code snippet -->
-// 					<button id='download-close-btn' type='button' class='btn btn-warning' onclick="asn.hideSearch()"><i class='ti ti-x'></i>&nbsp;CLOSE</button>
-// 					</td>
-// 				</tr>
-// 				</tbody>
-// 				</table>
-// 				`;
-
-// 			let xbtn = `
-// 				<button id='download-all-btn' type='button' class='btn btn-primary' onclick="asn.printPdf('new','0')"><i class='ti ti-download'></i>&nbsp;DOWNLOAD ALL PDF</button>
-// 				<!-- Continuation from previous code snippet -->
-// 			`
-// 				// Send the constructed HTML as response
-// 				res.status(200).json({text:xtable, xdata:results, btn: xbtn});
-
-// 		}//*****************endif */
-
-		
-// 	} catch (err) {
-// 		console.error('Error processing request:', err);
-// 		res.status(500).json({ error: 'Error' });
-// 	}
-// });
-//=================END GET RECORD BY ID OR NAME =============//
 
 //============ search by id or name ============//
 // Route parameters now perfectly match your client JS URL build order
@@ -1838,7 +1722,6 @@ router.get('/getchart', async (req, res) => {
 
 //================ RESET PDF=================//
 router.get('/resetpdf/:batch',async(req,res)=>{
-
 
 	//res.status(200).json({status:true})
 	console.log('**** RESET PDF **** ', req.params.batch)
