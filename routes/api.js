@@ -695,11 +695,13 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 
 
 ///===== get update grid total claims
-router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
+//new jun 3 2026
+///===== get update grid total claims
+router.get('/claimsupdate/:region/:grpid/:email', async (req, res) => {
 	
 	const { region, grpid, email } = req.params; // Use destructuring
   
-	console.log('===FIRED CLAIMSUPDATE()====')
+	console.log('===FIRED CLAIMSUPDATE()====', region);
 
 	try {
 		let sql;
@@ -708,53 +710,121 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 		if (region !== 'ALL') {
 			// Scenario 1: Specific region(s)
 			const regionsArray = region.split(',');
-			const sanitizedRegions = regionsArray.map(region => region.trim());
+			const sanitizedRegions = regionsArray.map(r => r.trim());
 
-			// SQL with parameterized query.
+			// Dynamically construct dynamic binding placeholder sequence (?, ?)
+			const placeholders = sanitizedRegions.map(() => '?').join(',');
+
+			// REFACTORED SQL: Employs DISTINCT subquery join and groups by formatted date expression
 			sql = `
-				select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-				round(sum(a.amount)) as total
-				from asn_claims a
-				join asn_spx_hubs b 
-				on b.hub = a.hubs_location
-				where (a.pdf_batch is null or a.pdf_batch = "") 
-				AND b.region IN (?)
-				and a.transaction_year='${currentYear}'
-				group by a.uploaded_at
-				order by a.uploaded_at DESC
+				SELECT 
+					DATE_FORMAT(a.uploaded_at, '%M %d, %Y') AS xdate, 
+					COALESCE(ROUND(SUM(a.amount)), 0) AS total
+				FROM asn_claims a
+				INNER JOIN (
+					SELECT DISTINCT hub, region 
+					FROM asn_spx_hubs
+				) b ON b.hub = a.hubs_location
+				WHERE (a.pdf_batch IS NULL OR a.pdf_batch = "") 
+				AND b.region IN (${placeholders})
+				AND a.transaction_year = '${currentYear}'
+				GROUP BY DATE_FORMAT(a.uploaded_at, '%M %d, %Y'), DATE(a.uploaded_at)
+				ORDER BY DATE(a.uploaded_at) DESC;
 			`;
-			params = [sanitizedRegions];  // Pass the array of regions as a parameter
-
-			//console.log(sql, sanitizedRegions); // Log the SQL and parameters
+			params = sanitizedRegions;  // Spread values smoothly into flat array indices
 		} else {
 			// Scenario 2: All regions
 			sql = `
-				select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
-				round(sum(a.amount)) as total
-				from asn_claims a
-				where (a.pdf_batch is null or a.pdf_batch = "")
-				and a.transaction_year = '${currentYear}'
-				group by a.uploaded_at
-				order by a.uploaded_at DESC`
-			;
-			// No parameters needed for this query
-			//console.log(sql);
+				SELECT 
+					DATE_FORMAT(a.uploaded_at, '%M %d, %Y') AS xdate, 
+					COALESCE(ROUND(SUM(a.amount)), 0) AS total
+				FROM asn_claims a
+				WHERE (a.pdf_batch IS NULL OR a.pdf_batch = "")
+				AND a.transaction_year = '${currentYear}'
+				GROUP BY DATE_FORMAT(a.uploaded_at, '%M %d, %Y'), DATE(a.uploaded_at)
+				ORDER BY DATE(a.uploaded_at) DESC;
+			`;
 		}
 
 		// Execute the query
 		const [results] = await db.query(sql, params);
 
 		if (!results || results.length === 0) {
-		return res.status(200).send('** No Record Yet! ***'); // Use return
+			return res.status(200).send('** No Record Yet! ***'); 
 		}
 		
-		res.status(200).send(results);
+		// FIXED: Explicitly use .json() to output structured network payloads correctly
+		return res.status(200).json(results);
+
 	} catch (err) {
 		console.error('Error processing request:', err);
-		res.status(500).json({ error: 'Error' });
+		return res.status(500).json({ error: 'Error' });
 	}
+});
 
-})
+
+
+//old
+// router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
+	
+// 	const { region, grpid, email } = req.params; // Use destructuring
+  
+// 	console.log('===FIRED CLAIMSUPDATE()====')
+
+// 	try {
+// 		let sql;
+// 		let params = [];
+
+// 		if (region !== 'ALL') {
+// 			// Scenario 1: Specific region(s)
+// 			const regionsArray = region.split(',');
+// 			const sanitizedRegions = regionsArray.map(region => region.trim());
+
+// 			// SQL with parameterized query.
+// 			sql = `
+// 				select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
+// 				round(sum(a.amount)) as total
+// 				from asn_claims a
+// 				join asn_spx_hubs b 
+// 				on b.hub = a.hubs_location
+// 				where (a.pdf_batch is null or a.pdf_batch = "") 
+// 				AND b.region IN (?)
+// 				and a.transaction_year='${currentYear}'
+// 				group by a.uploaded_at
+// 				order by a.uploaded_at DESC
+// 			`;
+// 			params = [sanitizedRegions];  // Pass the array of regions as a parameter
+
+// 			//console.log(sql, sanitizedRegions); // Log the SQL and parameters
+// 		} else {
+// 			// Scenario 2: All regions
+// 			sql = `
+// 				select distinct( DATE_FORMAT(a.uploaded_at,'%M %d, %Y')) as xdate, 
+// 				round(sum(a.amount)) as total
+// 				from asn_claims a
+// 				where (a.pdf_batch is null or a.pdf_batch = "")
+// 				and a.transaction_year = '${currentYear}'
+// 				group by a.uploaded_at
+// 				order by a.uploaded_at DESC`
+// 			;
+// 			// No parameters needed for this query
+// 			//console.log(sql);
+// 		}
+
+// 		// Execute the query
+// 		const [results] = await db.query(sql, params);
+
+// 		if (!results || results.length === 0) {
+// 		return res.status(200).send('** No Record Yet! ***'); // Use return
+// 		}
+		
+// 		res.status(200).send(results);
+// 	} catch (err) {
+// 		console.error('Error processing request:', err);
+// 		res.status(500).json({ error: 'Error' });
+// 	}
+
+// })
 
 //==========TOP 5 HUB 
 //new jun 3 2026
