@@ -757,6 +757,7 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req,res)=>{
 })
 
 //==========TOP 5 HUB 
+//new jun 3 2026
 router.get('/gethub/:region/:grpid/:email', async (req, res) => {
   const { region, grpid, email } = req.params; // Use destructuring
   console.log('====gethub() ', region);
@@ -765,26 +766,32 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
     let sql;
     let params = [];
 
+    // REFACTORED JOIN: Isolates hubs to exactly 1 unique row to prevent SUM() multiplication
     if (region !== 'ALL') {
       // Scenario 1: Specific region(s)
       const regionsArray = region.split(',');
-      const sanitizedRegions = regionsArray.map(region => region.trim());
+      const sanitizedRegions = regionsArray.map(r => r.trim());
 
-      // SQL with parameterized query.
+      // Dynamically create placeholders (?, ?, ?) depending on the array length
+      const placeholders = sanitizedRegions.map(() => '?').join(',');
+
       sql = `
         SELECT  
           b.hubs_location AS hub, 
           a.region, 
           COALESCE(ROUND(SUM(b.amount),2),0) AS total
         FROM asn_claims b 
-        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
+        LEFT JOIN (
+          SELECT DISTINCT hub, region 
+          FROM asn_spx_hubs
+        ) a ON a.hub = b.hubs_location 
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
-        AND a.region IN (?)
+        AND a.region IN (${placeholders})
         AND b.transaction_year='${currentYear}'
         GROUP BY b.hubs_location, a.region
         ORDER BY total DESC LIMIT 5;
       `;
-      params = [sanitizedRegions];  // Pass the array of regions as a parameter
+      params = sanitizedRegions;  // Spread values out nicely into params array
 
       console.log(sql, sanitizedRegions); // Log the SQL and parameters
     } else {
@@ -795,7 +802,10 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
           a.region, 
           COALESCE(ROUND(SUM(b.amount),2),0) AS total
         FROM asn_claims b 
-        LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+        LEFT JOIN (
+          SELECT DISTINCT hub, region 
+          FROM asn_spx_hubs
+        ) a ON a.hub = b.hubs_location
         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
           AND b.transaction_year='${currentYear}'
         GROUP BY b.hubs_location, a.region
@@ -829,7 +839,7 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
 
     results.forEach(row => {
       xtable += `<tr>
-        <td><b>${row.region}</b></td>
+        <td><b>${row.region ?? 'NO REGION'}</b></td>
         <td><b>${row.hub}</b></td>
         <td align='right'><b>${addCommas(parseFloat(row.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
       </tr>`;
@@ -843,6 +853,94 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
     res.status(500).json({ error: 'Error' });
   }
 });
+
+//old
+// router.get('/gethub/:region/:grpid/:email', async (req, res) => {
+//   const { region, grpid, email } = req.params; // Use destructuring
+//   console.log('====gethub() ', region);
+
+//   try {
+//     let sql;
+//     let params = [];
+
+//     if (region !== 'ALL') {
+//       // Scenario 1: Specific region(s)
+//       const regionsArray = region.split(',');
+//       const sanitizedRegions = regionsArray.map(region => region.trim());
+
+//       // SQL with parameterized query.
+//       sql = `
+//         SELECT  
+//           b.hubs_location AS hub, 
+//           a.region, 
+//           COALESCE(ROUND(SUM(b.amount),2),0) AS total
+//         FROM asn_claims b 
+//         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location 
+//         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+//         AND a.region IN (?)
+//         AND b.transaction_year='${currentYear}'
+//         GROUP BY b.hubs_location, a.region
+//         ORDER BY total DESC LIMIT 5;
+//       `;
+//       params = [sanitizedRegions];  // Pass the array of regions as a parameter
+
+//       console.log(sql, sanitizedRegions); // Log the SQL and parameters
+//     } else {
+//       // Scenario 2: All regions
+//       sql = `
+//         SELECT  
+//           b.hubs_location AS hub, 
+//           a.region, 
+//           COALESCE(ROUND(SUM(b.amount),2),0) AS total
+//         FROM asn_claims b 
+//         LEFT JOIN asn_spx_hubs a ON a.hub = b.hubs_location
+//         WHERE (b.pdf_batch IS NULL OR b.pdf_batch = '')
+//           AND b.transaction_year='${currentYear}'
+//         GROUP BY b.hubs_location, a.region
+//         ORDER BY total DESC LIMIT 5;
+//       `;
+//       // No parameters needed for this query
+//       console.log(sql);
+//     }
+
+//     // Execute the query
+//     const [results] = await db.query(sql, params);
+
+//     if (!results || results.length === 0) {
+//       return res.status(200).send('** No Record Yet! ***'); // Use return
+//     }
+
+//     console.log('=======Top 5 Hub processing...');
+
+//     // Build your HTML table
+//     let xtable = `<h2>(${region.toUpperCase()})</h2>
+//     <div class="col-lg-8">
+//       <table class="blueTable"> 
+//         <thead>
+//           <tr>
+//             <th>Region</th>
+//             <th>Hub Location</th>
+//             <th>Amount</th>
+//           </tr>
+//         </thead>
+//         <tbody>`;
+
+//     results.forEach(row => {
+//       xtable += `<tr>
+//         <td><b>${row.region}</b></td>
+//         <td><b>${row.hub}</b></td>
+//         <td align='right'><b>${addCommas(parseFloat(row.total).toFixed(2))}&nbsp;&nbsp;&nbsp;</b></td>
+//       </tr>`;
+//     });
+
+//     xtable += `</tbody></table></div>`;
+
+//     res.status(200).send(xtable);
+//   } catch (err) {
+//     console.error('Error processing request:', err);
+//     res.status(500).json({ error: 'Error' });
+//   }
+// });
 
 
 
