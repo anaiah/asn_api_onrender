@@ -1,20 +1,21 @@
 const mysql = require('mysql2'); //use promise based mysql2
 const {Client} = require('pg');
 
- 
 let client
 
+// FIXED: Added Keep-Alive pings and reduced limit so the database doesn't choke
 const pool = mysql.createPool({
-   host: '153.92.15.50',
+    host: '153.92.15.50',
     user: 'u899193124_asianow',
-    //password: 'g12@c3M312c4',
     password:'G125c3@M312c4',
     database: 'u899193124_asianow',
     port:3306,
-    waitForConnections: true, // default
-    connectionLimit: 200,       // <-- Set your pool size here
+    waitForConnections: true, 
+    connectionLimit: 50,       // <-- Reduced from 200 to protect server slots
     queueLimit: 0,      
-    multipleStatements: true
+    multipleStatements: true,
+    enableKeepAlive: true,     // <-- CRITICAL: Prevents ECONNRESET by pinging server
+    keepAliveInitialDelay: 10000 // Pings every 10 seconds
 });
 
 // Promisify for async/await
@@ -23,48 +24,32 @@ const poolPromise = pool.promise();
 module.exports={
 
     query: (sql, params) => poolPromise.query(sql, params),
-  
+ 
     // optionally, add a method to get a connection if needed:
     getConnection: () => poolPromise.getConnection(),
 
-    connectDb :async()=>{
-
-        return new Promise((resolve,reject)=>{
-            const con = mysql.createConnection( {
-                host: '153.92.15.50',
-                user: 'u899193124_asianow',
-                password: 'G125c3@M312c4',
-                database: 'u899193124_asianow',
-                port:3306,
-                multipleStatements: true
-            });
-            con.connect((err) => {
-                if(err){
-                    reject(err);
-                }
-                    resolve(con);
-            });
-        
-        })//END RETURN ,
-        
+    // FIXED: Now borrows a healthy connection from the pool safely instead of spawning an unmanaged one
+    connectDb: async () => {
+        try {
+            const connection = await poolPromise.getConnection();
+            return connection;
+        } catch (err) {
+            throw err;
+        }
     },
-    closeDb : (con)=> {
-        con.destroy();
+    
+    // FIXED: Releases the pool connection back into the cluster instead of destroying the track
+    closeDb: (con) => {
+        if (con && typeof con.release === 'function') {
+            con.release(); // Releases back to pool gracefully
+        } else if (con && typeof con.destroy === 'function') {
+            con.destroy();
+        }
     },
 
     connectPg :()=>{
         return new Promise((resolve,reject)=>{
             const dbconfig ={
-                //host:"dpg-cnjiar2cn0vc73c211h0-a.singapore-postgres.render.com",
-                //host:"postgresql://osndproot03052k24:Sa2tCwB3apVozuuzqcQiyF2xFqILFqgX@dpg-cnjiar2cn0vc73c211h0-a.singapore-postgres.render.com:5432/osndp?ssl=true",
-                //user:"osndproot03052k24",
-                //password:"Sa2tCwB3apVozuuzqcQiyF2xFqILFqgX",
-                //database:"osndp",
-                //render.com
-                //host: "dpg-cqa9lciju9rs73bfl3u0-a.singapore-postgres.render.com",
-                //user:"zonked_thesisgrp",
-                //password:"3oHb9CTV1WqT91u1XJPOXeNnLEEVFR85",
-                //database:"zonked",/zonked
                 host: "ep-still-star-a5s7o7wh-pooler.us-east-2.aws.neon.tech",
                 user:"neondb_owner",
                 password:"npg_s7LehAjy9Ipv",
@@ -78,7 +63,7 @@ module.exports={
                 idleTimeoutMillis: 1000,
                 multipleStatements:true
             }
-            
+           
             const client = new Client(dbconfig);
             client.connect((err) => {
                 if(err){
@@ -86,7 +71,7 @@ module.exports={
                 }
                     resolve(client);
             });
-        
+       
            
         })//END RETURN
     },
@@ -94,5 +79,3 @@ module.exports={
         client.end();
     },
 }//END EXPORT
-
-
