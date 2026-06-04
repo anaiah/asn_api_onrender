@@ -2380,35 +2380,38 @@ router.get('/deletepdf/:batch', async(req, res) => {
 
 
 //===test menu-submenu array->json--->
-router.get('/menu/:grpid', async(req,res)=>{
-	console.log('=== menu()')
+router.get('/menu/:grpid', async (req, res) => {
+    const { grpid } = req.params;
+    console.log('=== menu() Fired for Group ID:', grpid);
 
+    // FIXED: Parameterized the grouplist condition using ? to stop SQL Injection
+    const sql = `
+        SELECT 
+            menu,
+            menu_icon,
+            grouplist,
+            JSON_ARRAYAGG(
+                JSON_OBJECT('sub', submenu, 'icon', submenu_icon, 'href', href)
+            ) AS list
+        FROM asn_menu
+        WHERE FIND_IN_SET(?, grouplist) > 0
+        GROUP BY menu, menu_icon, grouplist, sequence
+        ORDER BY sequence;
+    `;
 
-	connectDb()
-    .then((xdb)=>{ 
+    try {
+        // FIXED: Uses global async/await db pool, bypassing manual connection leaks completely
+        const [results] = await db.query(sql, [grpid]);
 
-		sql2 = `SELECT menu,
-			menu_icon,
-			grouplist, 
-			JSON_ARRAYAGG( 
-			JSON_OBJECT( 'sub', submenu, 'icon', submenu_icon, 'href', href )) AS list 
-			FROM asn_menu 
-			WHERE FIND_IN_SET('${req.params.grpid}', grouplist)> 0 
-			GROUP BY menu 
-			ORDER BY sequence;`
-		//console.log(sql)
-		//console.log(sql2)
+        // Return the clean JSON dataset to the client frontend navigation component
+        return res.status(200).json(results);
 
-		xdb.query( sql2 ,  (error, results)=>{
-			//console.log( error,results )
-			res.status(200).json( results )
-		})
+    } catch (error) {
+        console.error('Menu Generation Error:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
-	}).catch((error)=>{
-        res.status(500).json({error:'Error'})
-    }) 
-
-})
 
 
 const bcrypt = require("bcrypt")
