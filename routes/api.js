@@ -77,54 +77,137 @@ const dbconfig  ={
 const currentYear = new Date().getFullYear(); // Gets 2026 (or whatever the current year is)
 
 // Upload endpoint
-router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) => {
+// router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) => {
 	
-	console.log('==FIRING XLS CLAIMS===')
+// 	console.log('==FIRING XLS CLAIMS===')
+//     try {
+//         // Read the file buffer
+//         const workbook = xlsx.read(req.file.buffer);
+        
+//         // Assuming the data is in the first sheet
+//         const sheetName = workbook.SheetNames[0];
+//         const worksheet = workbook.Sheets[sheetName];
+        
+//         // Convert the sheet to JSON
+//         const data = xlsx.utils.sheet_to_json(worksheet);
+		
+// 		//console.log('json value ', data)
+// 		const insertPromises =[]
+ 		
+// 		const conn = await mysqls.createConnection(dbconfig);
+// 		let empId;
+
+// 			for( const record of data){
+// 				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_year } = record ;
+				
+// 				empId = uuid();
+
+// 				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amount, transaction_year) 
+// 							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+				
+// 				insertPromises.push( await conn.execute( query , [batch_id, empId ,full_name, 
+// 					track_number, claims_reason, category, hubs_location, 
+// 					batch_file, amt, transaction_year]))
+
+// 				console.log(query,batch_id,empId,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_year)
+// 			}
+			
+// 			await Promise.all(insertPromises)
+// 			await conn.end()
+		
+// 			console.log('CLOSING STREAM.. EXCEL FILE UPLOADED SUCCESSFULLY!')
+// 			return res.status(200).json({message:'Claims Excel File Upload Successfully!',status:true})
+
+		
+		
+//     } catch (error) {  //end try
+//         console.error(error);
+//         res.status(500).json({ error: 'Internal Server Error' });
+//     }
+		
+// });
+
+router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) => {
+   
+    console.log('==FIRING XLS CLAIMS===');
+    let conn; // Define outside the try block so it is accessible in the catch block
+
     try {
         // Read the file buffer
         const workbook = xlsx.read(req.file.buffer);
-        
+       
         // Assuming the data is in the first sheet
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        
+       
         // Convert the sheet to JSON
         const data = xlsx.utils.sheet_to_json(worksheet);
-		
-		//console.log('json value ', data)
-		const insertPromises =[]
- 		
-		const conn = await mysqls.createConnection(dbconfig);
-		let empId;
+       
+        // Helper function to turn JS 'undefined' into MySQL 'null' securely
+        const cleanParam = (val) => (val === undefined ? null : val);
 
-			for( const record of data){
-				const { batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_year } = record ;
-				
-				empId = uuid();
+        // Open connection explicitly for batch operations
+        conn = await mysqls.createConnection(dbconfig);
 
-				const query = `INSERT INTO asn_claims (batch_id,emp_id,full_name, track_number, claims_reason, category, hubs_location, batch_file, amount, transaction_year) 
-							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-				
-				insertPromises.push( await conn.execute( query , [batch_id, empId ,full_name, 
-					track_number, claims_reason, category, hubs_location, 
-					batch_file, amt, transaction_year]))
+        // Process each Excel record row sequentially
+        for (const record of data) {
+            const { 
+                batch_id, 
+                emp_id, 
+                full_name, 
+                track_number, 
+                claims_reason, 
+                category, 
+                hubs_location, 
+                batch_file, 
+                amt, 
+                transaction_year 
+            } = record;
+           
+            // FIXED: If emp_id is missing or blank in Excel, fall back to a fallback uuid()
+            const finalEmpId = emp_id ? emp_id : uuid();
 
-				console.log(query,batch_id,empId,full_name, track_number, claims_reason, category, hubs_location, batch_file, amt, transaction_year)
-			}
-			
-			await Promise.all(insertPromises)
-			await conn.end()
-		
-			console.log('CLOSING STREAM.. EXCEL FILE UPLOADED SUCCESSFULLY!')
-			return res.status(200).json({message:'Claims Excel File Upload Successfully!',status:true})
+            const query = `
+                INSERT INTO asn_claims (
+                    batch_id, emp_id, full_name, track_number, claims_reason, 
+                    category, hubs_location, batch_file, amount, transaction_year
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
 
-		
-		
-    } catch (error) {  //end try
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
+            // FIXED: Wrap variables inside cleanParam() to stop the 'undefined' query crash
+            const queryParams = [
+                cleanParam(batch_id),
+                cleanParam(finalEmpId),
+                cleanParam(full_name),
+                cleanParam(track_number),
+                cleanParam(claims_reason),
+                cleanParam(category),
+                cleanParam(hubs_location),
+                cleanParam(batch_file),
+                cleanParam(amt),
+                cleanParam(transaction_year)
+            ];
+
+            // Execute the record insertion step instantly
+            await conn.execute(query, queryParams);
+            
+            console.log(`Executed: ${full_name || 'UNKNOWN RIDER'} - Amount: ${amt}`);
+        }
+           
+        // Safely close connection link 
+        await conn.end();
+       
+        console.log('CLOSING STREAM.. EXCEL FILE UPLOADED SUCCESSFULLY!');
+        return res.status(200).json({ message: 'Claims Excel File Uploaded Successfully!', status: true });
+
+    } catch (error) {  
+        // CRITICAL FIX: Closes connection channel immediately if a row injection fails
+        if (conn && conn.end) {
+            await conn.end().catch(() => {});
+        }
+        console.error('XLS Upload Failed:', error);
+        return res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
-		
 });
 
 //=======================THIS IS FOR UPLOADING ATD STATUS =================//
