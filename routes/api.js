@@ -70,7 +70,7 @@ const mysqls = require('mysql2/promise')
 const dbconfig  ={
 	host: '153.92.15.50',
 	user: 'u899193124_asianow',
-	password: 'V7!mQ2#zL9@pX4$kR1',
+	password: 'G125c3@M312c4',
 	database: 'u899193124_asianow'
 }
 
@@ -511,7 +511,7 @@ router.post('/claims', async( req, res) => {
 			const dbconfig  ={
                 host: '153.92.15.50',
                 user: 'u899193124_asianow',
-                password: 'V7!mQ2#zL9@pX4$kR1',
+                password: 'G125c3@M312c4',
                 database: 'u899193124_asianow'
             }
 			const conn = await mysqls.createConnection(dbconfig);

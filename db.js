@@ -8,7 +8,7 @@ const pool = mysql.createPool({
    host: '153.92.15.50',
     user: 'u899193124_asianow',
     //password: 'g12@c3M312c4',
-    password:'V7!mQ2#zL9@pX4$kR1',
+    password:'G125c3@M312c4',
     database: 'u899193124_asianow',
     port:3306,
     waitForConnections: true, // default
@@ -33,7 +33,7 @@ module.exports={
             const con = mysql.createConnection( {
                 host: '153.92.15.50',
                 user: 'u899193124_asianow',
-                password: 'V7!mQ2#zL9@pX4$kR1',
+                password: 'G125c3@M312c4',
                 database: 'u899193124_asianow',
                 port:3306,
                 multipleStatements: true
