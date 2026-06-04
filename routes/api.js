@@ -70,7 +70,7 @@ const mysqls = require('mysql2/promise')
 const dbconfig  ={
 	host: '153.92.15.50',
 	user: 'u899193124_asianow',
-	password: 'g12@c3M312c4',
+	password: 'V7!mQ2#zL9@pX4$kR1',
 	database: 'u899193124_asianow'
 }
 
@@ -509,9 +509,9 @@ router.post('/claims', async( req, res) => {
 			console.log('Closing Stream, Trying to Up load to POSTGRES...')
 			
 			const dbconfig  ={
-                host: 'srv1759.hstgr.io',
+                host: '153.92.15.50',
                 user: 'u899193124_asianow',
-                password: 'g12@c3M312c4',
+                password: 'V7!mQ2#zL9@pX4$kR1',
                 database: 'u899193124_asianow'
             }
 			const conn = await mysqls.createConnection(dbconfig);

@@ -7,7 +7,8 @@ let client
 const pool = mysql.createPool({
    host: '153.92.15.50',
     user: 'u899193124_asianow',
-    password: 'g12@c3M312c4',
+    //password: 'g12@c3M312c4',
+    password:'V7!mQ2#zL9@pX4$kR1',
     database: 'u899193124_asianow',
     port:3306,
     waitForConnections: true, // default
@@ -30,9 +31,9 @@ module.exports={
 
         return new Promise((resolve,reject)=>{
             const con = mysql.createConnection( {
-                host: 'srv1759.hstgr.io',
+                host: '153.92.15.50',
                 user: 'u899193124_asianow',
-                password: 'g12@c3M312c4',
+                password: 'V7!mQ2#zL9@pX4$kR1',
                 database: 'u899193124_asianow',
                 port:3306,
                 multipleStatements: true
