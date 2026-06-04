@@ -167,6 +167,12 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
             // FIXED: If emp_id is missing or blank in Excel, fall back to a fallback uuid()
             const finalEmpId = emp_id ? emp_id : uuid();
 
+			// NEW LOGIC: Safely enforce exactly 2 decimal places for the database amount 
+			let finalAmount = null; 
+			if (amt !== undefined && amt !== null && !isNaN(amt)) { 
+				finalAmount = parseFloat(parseFloat(amt).toFixed(2)); 
+			} 
+
             const query = `
                 INSERT INTO asn_claims (
                     batch_id, emp_id, full_name, track_number, claims_reason, 
@@ -184,7 +190,7 @@ router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) 
                 cleanParam(category),
                 cleanParam(hubs_location),
                 cleanParam(batch_file),
-                cleanParam(amt),
+                cleanParam(finalAmount),
                 cleanParam(transaction_year)
             ];
 
