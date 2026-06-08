@@ -2114,45 +2114,73 @@ router.get('/getlistpdf/:limit/:page', async(req,res) => {
 
 //=======================function to get pdf batch number=================//
 //this is used to get the next pdf batch number
-const pdfBatch =   () =>{
-	return new Promise((resolve, reject)=> {
-		const sql = `Select sequence from asn_pdf_sequence;`
-		let xcode, seq
+//old
+// const pdfBatch =   () =>{
+// 	return new Promise((resolve, reject)=> {
+// 		const sql = `Select sequence from asn_pdf_sequence;`
+// 		let xcode, seq
 	
-		connectDb()
-		.then((xdb)=>{
-			xdb.query(`${sql}`,(error,results) => {
+// 		connectDb()
+// 		.then((xdb)=>{
+// 			xdb.query(`${sql}`,(error,results) => {
 
-				if(results.length > 0){
+// 				if(results.length > 0){
 					
-					seq = results[0].sequence+1
-					//console.log( seq.toString().padStart(5,"0") )
-					const usql = `update asn_pdf_sequence set sequence = ${seq}`
+// 					seq = results[0].sequence+1
+// 					//console.log( seq.toString().padStart(5,"0") )
+// 					const usql = `update asn_pdf_sequence set sequence = ${seq}`
 					
-					xdb.query(`${usql}`,(error,udata) => {
-					})
+// 					xdb.query(`${usql}`,(error,udata) => {
+// 					})
 	
-					xcode =`ASN-${seq.toString().padStart(5,"0")}`
+// 					xcode =`ASN-${seq.toString().padStart(5,"0")}`
 					
-					//onsole.log('==inside pdfBatch()===',seq, xcode )
+// 					//onsole.log('==inside pdfBatch()===',seq, xcode )
 					
-					closeDb(xdb)
+// 					closeDb(xdb)
 
-					//console.log(xcode)
-					resolve( xcode )
-				}else{
-					reject(error)
-				}//eif
+// 					//console.log(xcode)
+// 					resolve( xcode )
+// 				}else{
+// 					reject(error)
+// 				}//eif
 				
-			})
-		}).catch((error)=>{
-			reject(error)
-			res.status(500).json({error:'Error'})
-		})
-	})
+// 			})
+// 		}).catch((error)=>{
+// 			reject(error)
+// 			res.status(500).json({error:'Error'})
+// 		})
+// 	})
 
 
-}
+// }
+//new june 8 2026
+//=======================function to get pdf batch number=================//
+//this is used to get the next pdf batch number
+const pdfBatch = async () => {
+    // FIXED: Use your promise-based db pool directly for safe, leak-proof execution
+    const selectSql = `SELECT sequence FROM asn_pdf_sequence;`;
+    
+    try {
+        const [results] = await db.query(selectSql);
+
+        if (results && results.length > 0) {
+            const seq = results[0].sequence + 1;
+            
+            // FIXED: Parameterized update query to ensure database safety
+            const updateSql = `UPDATE asn_pdf_sequence SET sequence = ?`;
+            await db.query(updateSql, [seq]);
+
+            const xcode = `ASN-${seq.toString().padStart(5, "0")}`;
+            return xcode; // Directly return the generated value via async/await
+        } else {
+            throw new Error('No sequence records found in asn_pdf_sequence table');
+        }
+    } catch (error) {
+        console.error('Error generating pdfBatch sequence:', error);
+        throw error; // Throw the error so the calling endpoint can catch it and handle res.status()
+    }
+};
 
 router.get('/getbatch', async(req,res)=>{
 	
