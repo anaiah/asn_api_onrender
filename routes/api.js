@@ -74,7 +74,7 @@ const dbconfig  ={
 	database: 'u899193124_asianow'
 }
 
-const currentYear = new Date().getFullYear(); // Gets 2026 (or whatever the current year is)
+let currentYear = new Date().getFullYear(); // Gets 2026 (or whatever the current year is)
 
 // Upload endpoint
 // router.post('/xlsclaims', upload.single('claims_upload_file'), async (req, res) => {
@@ -786,12 +786,13 @@ router.get('/getprintpdf/:region/:grpid/:email', async (req,res)=>{
 ///===== get update grid total claims
 //new jun 3 2026
 ///===== get update grid total claims
-router.get('/claimsupdate/:region/:grpid/:email', async (req, res) => {
+router.get('/claimsupdate/:region/:grpid/:email/:xyear', async (req, res) => {
 	
-	const { region, grpid, email } = req.params; // Use destructuring
-  
-	console.log('===FIRED CLAIMSUPDATE()====', region);
+	const { region, grpid, email, xyear } = req.params; // Use destructuring
+	currentYear = xyear;
 
+	console.log('===FIRED CLAIMSUPDATE()====', region, currentYear);
+ 
 	try {
 		let sql;
 		let params = [];
@@ -835,11 +836,13 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req, res) => {
 			`;
 		}
 
+		console.log('Executing SQL for claims update:', sql, params);
+		
 		// Execute the query
 		const [results] = await db.query(sql, params);
 
 		if (!results || results.length === 0) {
-			return res.status(200).send('** No Record Yet! ***'); 
+			return res.status(200).json([])
 		}
 		
 		// FIXED: Explicitly use .json() to output structured network payloads correctly
@@ -917,9 +920,11 @@ router.get('/claimsupdate/:region/:grpid/:email', async (req, res) => {
 
 //==========TOP 5 HUB 
 //new jun 3 2026
-router.get('/gethub/:region/:grpid/:email', async (req, res) => {
-  const { region, grpid, email } = req.params; // Use destructuring
+router.get('/gethub/:region/:grpid/:email/:xyear', async (req, res) => {
+  const { region, grpid, email, xyear } = req.params; // Use destructuring
   console.log('====gethub() ', region);
+
+  currentYear = xyear;
 
   try {
     let sql;
@@ -1107,8 +1112,10 @@ router.get('/gethub/:region/:grpid/:email', async (req, res) => {
 // Your db is already imported
 // const db = require('../db'); 
 //new jun 3 2026
-router.get('/getrider/:region/:grpid/:email', async (req, res) => {
-  const { region, grpid, email } = req.params;
+router.get('/getrider/:region/:grpid/:email/:xyear', async (req, res) => {
+  const { region, grpid, email, xyear } = req.params;
+  
+  currentYear = xyear;
 
   try {
     let sql;
@@ -1481,9 +1488,10 @@ const getServerIp = () =>{
 
 //============ search by id or name ============//
 // Route parameters now perfectly match your client JS URL build order
-router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async (req, res) => {
+router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/:xyear', async (req, res) => {
     // Destructure using your client naming conventions: enum -> emp_id, ename -> ename, hub -> hub
-    const { enum: emp_id, ename, hub, region, grpid, email, filter } = req.params;
+    const { enum: emp_id, ename, hub, region, grpid, email, filter, xyear } = req.params;
+    currentYear = xyear;
 
     let sqlConditions = [];
     let queryParams = [];
@@ -1881,8 +1889,13 @@ router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/', async 
 // 	}
 // });
 //============get chart data new jun 3 2026 ============//
-router.get('/getchart', async (req, res) => {
-	console.log('===FIRING getchart() ====');
+router.get('/getchart/:xyear', async (req, res) => {
+
+	
+	console.log('===FIRING getchart() for current year ====');
+
+	currentYear = req.params.xyear
+
 	try {
 		// REFACTORED SQL: Employs DISTINCT subquery join and corrects logic flags
 		const sql = `
