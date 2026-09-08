@@ -68,10 +68,10 @@ const { v4: uuid } = require('uuid'); // for generating unique IDs//
 const mysqls = require('mysql2/promise')
 
 const dbconfig  ={
-	host: '153.92.15.50',
-	user: 'u899193124_asianow',
-	password: 'G125c3@M312c4',
-	database: 'u899193124_asianow'
+	host: process.env.DB_HOST,  // or srv696.hstgr.io
+    user: process.env.DB_USER, 
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
 }
 
 let currentYear = new Date().getFullYear(); // Gets 2026 (or whatever the current year is)
@@ -480,10 +480,11 @@ router.post('/postimage',   async (req, res) => {
 			sharp( fstream.path ).jpeg({ quality: 30 }).toFile('FINAL '+fstream.path)
 
 			ftpclient.scp(fstream.path, {
-				host: 'gator3142.hostgator.com'	, //--this is orig ->process.env.FTPHOST,
+				
+				host: process.env.FTP_GATOR, //--this is orig ->process.env.FTPHOST,
 				//port: 3331, // defaults to 21
-				username: 'vantazti', // this is orig-> process.env.FTPUSER, // defaults to "anonymous"
-				password: `2Timothy@1:9_10`,
+				username: process.env.FTP_USER, // this FTP_is orig-> process.env.FTPUSER, // defaults to "anonymous"
+				password: process.env.FTP_PASS,
 				path: 'public_html/vanz/dr'
 			}, function(err) {
 				console.log("File Uploaded!!!");
@@ -535,10 +536,10 @@ router.post('/uploadpdf',  async(req, res)=>{
 		fstream.on('close', function () {
 			console.log('Closing Stream, Trying to Up load...')
 			ftpclient.scp(fstream.path, {
-				host: "gator3142.hostgator.com", //--this is orig ->process.env.FTPHOST,
+				host: process.env.FTP_GATOR, //--this is orig ->process.env.FTPHOST,
 				//port: 3331, // defaults to 21
-				username: "vantazti", // this is orig-> process.env.FTPUSER, // defaults to "anonymous"
-				password: "2Timothy@1:9_10",
+				username: process.env.FTP_USER, // this FTP_is orig-> process.env.FTPUSER, // defaults to "anonymous"
+				password: process.env.FTP_PASS,
 				path: 'public_html/osndp/'
 			}, function(err) {
 				console.log("File Uploaded!!!");
@@ -598,10 +599,10 @@ router.post('/claims', async( req, res) => {
 			console.log('Closing Stream, Trying to Up load to POSTGRES...')
 			
 			const dbconfig  ={
-                host: '153.92.15.50',
-                user: 'u899193124_asianow',
-                password: 'G125c3@M312c4',
-                database: 'u899193124_asianow'
+                host: process.env.DB_HOST,  // or srv696.hstgr.io
+				user: process.env.DB_USER, 
+				password: process.env.DB_PASS,
+				database: process.env.DB_NAME,
             }
 			const conn = await mysqls.createConnection(dbconfig);
 
@@ -1889,6 +1890,7 @@ router.get('/getrecord/:enum/:ename/:hub/:region/:grpid/:email/:filter/:xyear', 
 // 	}
 // });
 //============get chart data new jun 3 2026 ============//
+
 router.get('/getchart/:xyear', async (req, res) => {
 
 	

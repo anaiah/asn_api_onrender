@@ -4,26 +4,10 @@ const app = express()
 
 const bodyParser = require('body-parser')
 
+require('dotenv').config()
+
 //======== for db connection
-const { connectPg, closePg, connectDb, closeDb }  = require('./db')
-
-connectPg() 
-.then((pg)=>{
-    console.log("====ASN.JS ASIANOW POSTGRESQL CONNECTION SUCCESS!====")
-    closePg(pg);
-})                        
-.catch((error)=>{
-    console.log("***ERROR, CAN'T CONNECT TO POSTGRESQL DB!****",error.code)
-});  
-
-connectDb()
-.then((db)=>{
-    console.log("====ASN.JS ASIANOW MYSQL CONNECTION SUCCESS!====")
-    closeDb(db);
-})                        
-.catch((error)=>{
-    console.log("***ERROR, ASN.JS CAN'T CONNECT TO MYSQL DB!****",error.code)
-});  
+const db  = require('./db')
 
 const http = require('http')
 
@@ -58,28 +42,37 @@ app.use(bodyParser.urlencoded({extended:false}))
 //=== this is !important for CORS especially for different servers calling====//
 //const allowedOrigins = ["https://app.vantaztic.com","https://app.vantaztic.com","https://osndp1.onrender.com","http://localhost:4001"]
 
-const allowedOrigins = "*"
-/*
-app.use(function(req, res, next) {
-    let origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
-        res.header("Access-Control-Allow-Origin", origin); // restrict it to the required domain
-    }
-    res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-    next();
-});
-*/
+const allowedOrigins = [
+  'https://asianowapp.com',
+  'https://www.asianowapp.com',
+  'http://localhost:4000',      // adjust port to whatever your local frontend uses
+  'http://127.0.0.1:5500',      // e.g. Live Server default port
+];
 
-var allowCrossDomain = function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type,Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    next();
-}
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like Postman, curl, mobile apps)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS: ' + origin));
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+    credentials: true
+}))
 
+app.options('*', cors()); // Enable pre-flight for all routes
 
-app.use(allowCrossDomain);
+// var allowCrossDomain = function(req, res, next) {
+//     res.header('Access-Control-Allow-Origin', '*');
+//     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+//     res.header('Access-Control-Allow-Headers', 'Content-Type,Origin, X-Requested-With, Content-Type, Accept, Authorization');
+//     next();
+// }
+
+// app.use(allowCrossDomain);
 
 
 //======== END NODEJS CORS SETTING
@@ -95,18 +88,15 @@ app.get('/test',(req, res)=>{
     //res.sendFile(path.join(__dirname , 'index.html'))
 })
 
-//===local routing
-/*
-app.get('/',(req, res)=>{
-    res.send('API ready to serve!')
-    //res.sendFile(path.join(__dirname , 'index.html'))
-})
+db.getConnection()
+  .then(con => {
+    console.log('ASIANOW SPX GROUP DATABASE CONNECTED!');
+    con.release();
+  })
+  .catch(err => {
+    console.error('DB connection failed:', err);
+  });
 
-app.get('/test',(req, res)=>{
-    res.send(`Enuff with the test it's working fine!`)
-    //res.sendFile(path.join(__dirname , 'index.html'))
-})
-*/
 
 //===============Main Routes
 const usersRouter = require('./routes/api');
