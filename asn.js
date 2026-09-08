@@ -9,6 +9,8 @@ require('dotenv').config()
 //======== for db connection
 const db  = require('./db')
 
+const cors = require('cors')
+
 const http = require('http')
 
 //===== for socket.io
